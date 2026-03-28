@@ -69,7 +69,7 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | ├── `src/`                                | Core application logic (modular pipeline components)                      |
 | │   ├── `ingestion/`                      | Handles data ingestion from CSV or external APIs                          |
 | │   │   ├── `__init__.py`                 | Initialize the ingestion package                                          |
-| │   │   └──`load_leads.py`                | Loads raw leads data into the pipeline                                    |
+| │   │   └──`load_company_leads.py`        | Loads raw leads data into the pipeline                                    |
 | │   ├── `processing/`                     | Data processing layer (cleaning, normalization, and feature preparation)  |
 | │   │   ├── `__init__.py`                 | Initialize the processing package                                         |
 | │   │   ├── `cleaning/`                   | Modules for data cleaning and standardization                             |
