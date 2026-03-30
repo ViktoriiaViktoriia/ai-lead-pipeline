@@ -1,0 +1,47 @@
+from pathlib import Path
+from typing import Union
+import pandas as pd
+
+from config.logger_config import logger
+
+
+def validate_file_path(file_path: Union[str, Path]) -> None:
+    """
+    Validate that the given file path exists and points to a file.
+
+    Args:
+        file_path (str): Path to the file
+
+    Raises:
+        FileNotFoundError: If file does not exist
+        ValueError: If path exists but is not a file
+    """
+
+    path = Path(file_path)
+
+    if not path.exists():
+        logger.error(f"File not found: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    if not path.is_file():
+        logger.error(f"Path is not a file: {file_path}")
+        raise ValueError(f"Path is not a file: {file_path}")
+
+    if path.suffix.lower() != ".csv":
+        logger.warning(f"Expected CSV file, got: {path.suffix}")
+
+    if path.stat().st_size == 0:
+        logger.warning(f"File is empty: {file_path}")
+
+    logger.info(f"File validation passed: {file_path}")
+
+
+def validate_required_columns(df: pd.DataFrame, required_columns: list):
+    """
+    Ensures required columns exist in dataset.
+    """
+
+    missing = [col for col in required_columns if col not in df.columns]
+
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
