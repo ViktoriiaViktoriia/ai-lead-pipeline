@@ -69,7 +69,8 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | ├── `src/`                                | Core application logic (modular pipeline components)                      |
 | │   ├── `ingestion/`                      | Handles data ingestion from CSV or external APIs                          |
 | │   │   ├── `__init__.py`                 | Initialize the ingestion package                                          |
-| │   │   └──`load_company_leads.py`        | Loads raw leads data into the pipeline                                    |
+| │   │   ├── `load_company_leads.py`       | Loads raw leads data into the pipeline                                    |
+| │   │   └── `metadata.py`                 | Creates unique id and timestamps for leads data                           |
 | │   ├── `processing/`                     | Data processing layer (cleaning, normalization, and feature preparation)  |
 | │   │   ├── `__init__.py`                 | Initialize the processing package                                         |
 | │   │   ├── `cleaning/`                   | Modules for data cleaning and standardization                             |
@@ -82,6 +83,7 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | │   │   │    └── `deduplicator.py`        | Removes duplicate company records                                         |
 | │   │   ├── `data_quality/`               | Dataset-level data quality checks and metrics                             |
 | │   │   │    ├── `__init__.py`            | Initializes the data_quality subpackage                                   |
+| │   │   │    ├── `profiling.py`           | Dataset profiling overview (statistics)                                   |
 | │   │   │    └── `checks.py`              | Computes data quality metrics (missing domain rate, duplicates)           |
 | │   │   ├── `clean_data.py`               | Cleans missing values, formats fields, removes duplicates                 |
 | │   │   └── `feature_engineering.py`      | Generates scores                                                          | 
@@ -93,7 +95,7 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | │   │   ├── `__init__.py`                 | Initialize the scoring package                                            |                                     
 | │   │   ├── `rule_based.py`               | Implements rule-based scoring logic                                       |
 | │   │   └── `scoring.py`                  | Combines features into final lead score and ranking                       |
-| │   ├── `database/`                       | Database interaction and schema definition                                |
+| │   ├── `database/`                       | Database interaction and database schema definition                       |
 | │   │   ├── `__init__.py`                 | Initialize the database package                                           |                                     
 | │   │   ├── `models.py`                   | Defines database schema                                                   |
 | │   │   └── `database_setup.py`           | Initializes DB connection and creates tables                              |
@@ -103,6 +105,9 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | │   │   └── `base_client.py`              | Reusable API request logic (authentication, retries, headers)             |
 | │   ├── `pipeline/`                       | Pipeline orchestration layer                                              |
 | │   │   └── `main.py`                     | Main script orchestrating tasks                                           |
+| │   ├── `schemas/`                        | Defines the structure of datasets used across the data pipeline           |
+| │   │   ├── `__init__.py`                 | Initialize the pipeline_schema package                                    |
+| │   │   └──`leads_schema.py`              | Schemas for downstream pipeline                                           |
 | │   └── `utils/`                          | Utility functions layer                                                   |
 | │   │   ├── `__init__.py`                 | Initialize the utils package                                              |                                     
 | │   │   ├── `helpers.py`                  | Reusable utility functions used across the project                        |
