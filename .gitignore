@@ -210,4 +210,6 @@ __marimo__/
 data/companies_raw_2023_q4.csv
 
 # chunked dataset (2.1 GB)
-data/processed/chunk_company_leads_2023_q4.csv
+# cleaned dataset
+data/processed/
+
