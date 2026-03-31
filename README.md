@@ -76,6 +76,7 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | │   │   ├── `cleaning/`                        | Modules for data cleaning and standardization                             |
 | │   │   │    ├── `__init__.py`                 | Initializes the cleaning subpackage                                       |
 | │   │   │    ├── `company_cleaner.py`          | Normalizes company names (case, punctuation, multilingual handling)       |
+| │   │   │    ├── `clean_data.py`               | Cleaning orchestrator, cleans missing values, formats fields              |
 | │   │   │    ├── `domain_cleaner.py`           | Normalizes and validates company domains (removes invalid/social domains) |
 | │   │   │    ├── `industry_cleaner.py`         | Standardizes industry values (formatting and normalization)               |
 | │   │   │    ├── `location_cleaner.py`         | Normalizes location data (country codes, city formatting)                 |
@@ -85,7 +86,6 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | │   │   │    ├── `__init__.py`                 | Initializes the data_quality subpackage                                   |
 | │   │   │    ├── `profiling.py`                | Dataset profiling overview (statistics)                                   |
 | │   │   │    └── `checks.py`                   | Computes data quality metrics (missing domain rate, duplicates)           |
-| │   │   ├── `clean_data.py`                    | Cleans missing values, formats fields, removes duplicates                 |
 | │   │   └── `feature_engineering.py`           | Generates scores                                                          | 
 | │   ├── `enrichment/`                          | Lead enrichment layer                                                     |
 | │   │   ├── `__init__.py`                      | Initialize the enrichment package                                         |                                     
