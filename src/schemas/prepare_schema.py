@@ -41,7 +41,8 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
         "industry": "industry",
         "size": "size",
         "country": "country",
-        "country-code": "country"
+        "country-code": "country",
+        "country_code": "country"
     }
 
     df = df.rename(columns=column_mapping)
