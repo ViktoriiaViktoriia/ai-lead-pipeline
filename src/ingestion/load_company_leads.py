@@ -6,7 +6,8 @@ from config.logger_config import logger
 from src.schemas import prepare_schema
 from src.ingestion.metadata import generate_company_id, get_ingestion_timestamp
 from src.processing.data_quality import profile_dataset
-from src.utils.validators import validate_file_path
+from src.utils.validators import validate_file_path, validate_folder_path
+from src.utils.helpers import sample_parquet_folder
 
 
 def load_csv_data(file_path: str, encoding: Optional[str] = "utf-8") -> pd.DataFrame:
@@ -68,11 +69,12 @@ def process_leads_in_chunks(input_path, output_path, chunk_size=50000):
     """
 
     first_chunk = True
+    chunk_number = 0
 
     for chunk in pd.read_csv(input_path, chunksize=chunk_size):
 
         # Shows rows and columns
-        logger.info(f"Processing chunk: {chunk.shape}")
+        logger.info(f"Processing chunk: #{chunk_number + 1} with shape: {chunk.shape}")
 
         # Apply pipeline steps
         chunk = prepare_schema(chunk)
@@ -85,13 +87,13 @@ def process_leads_in_chunks(input_path, output_path, chunk_size=50000):
             logger.info(f"First 5 rows of this chunk:\n{chunk.head().to_dict(orient='records')}")
 
         # Save result
-        chunk.to_csv(
-            output_path,
-            mode="w" if first_chunk else "a",
-            index=False,
-            header=first_chunk
+        chunk.to_parquet(
+            output_path / f"chunk_{chunk_number:04d}.parquet",
+            engine="pyarrow",
+            index=False
         )
 
+        chunk_number += 1
         first_chunk = False
 
     logger.info("Finished processing large CSV")
@@ -132,9 +134,9 @@ def load_raw_leads(input_path: str, output_path: str) -> None:
 
     # Validate output path after processing
     logger.info("Validating output path.")
-    validate_file_path(output_path)
+    validate_folder_path(output_path)
 
-    logger.info(f"Output file successfully created: {output_path}")
+    logger.info(f"Output chunk folder successfully created: {output_path}")
 
-    df_head = pd.read_csv(output_path, nrows=5)
-    logger.info(f"Output sample:\n{df_head.head().to_dict(orient='records')}")
+    sample_df = sample_parquet_folder(output_path)
+    logger.info(f"Sample from first 3 chunks:\n{sample_df.head().to_dict(orient='records')}")
