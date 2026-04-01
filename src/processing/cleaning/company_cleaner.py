@@ -1,17 +1,12 @@
 import pandas as pd
 import re
+from typing import Optional
 
 from config.logger_config import logger
+from config.variables import LEGAL_SUFFIXES
 
 
-# Common legal suffixes across countries
-LEGAL_SUFFIXES = [
-    "llc", "inc", "ltd", "gmbh", "oy", "oyj", "ab", "as",
-    "bv", "sa", "sarl", "plc", "limited", "corporation", "corp"
-]
-
-
-def normalize_company_name(name: str) -> str | None:
+def normalize_company_name(name: str) -> Optional[str]:
     """
     Normalize company name: lowercase, remove special characters, remove legal suffixes.
     """
@@ -38,7 +33,6 @@ def clean_company_name(df: pd.DataFrame) -> pd.DataFrame:
     """
     Apply company name normalization.
     """
-    total_rows = len(df)
 
     # Count missing before
     missing_before = df["company_name"].isna().sum()
@@ -47,13 +41,13 @@ def clean_company_name(df: pd.DataFrame) -> pd.DataFrame:
     df["company_name_raw"] = df["company_name"]
 
     # Clean company names
+    logger.info("Normalizing company names")
     df["company_name"] = df["company_name"].apply(normalize_company_name)
 
     # Count missing after
-    missing_after = df["company_name"].isna.sum()
+    missing_after = df["company_name"].isna().sum()
 
     logger.info(
-        f"Company cleaning: {total_rows} rows processed | "
         f"missing before: {missing_before} -> after: {missing_after}"
     )
 
