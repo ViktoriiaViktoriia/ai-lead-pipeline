@@ -5,6 +5,18 @@ import pandas as pd
 from config.logger_config import logger
 
 
+def validate_folder_path(folder_path: Union[str, Path]) -> None:
+    """Ensure folder exists; if not, create it."""
+    folder = Path(folder_path)
+    if not folder.exists():
+        logger.info(f"Folder does not exist, creating: {folder}")
+        folder.mkdir(parents=True, exist_ok=True)
+    elif not folder.is_dir():
+        raise ValueError(f"Path exists but is not a folder: {folder}")
+    else:
+        logger.info(f"Folder validation completed: {folder}")
+
+
 def validate_file_path(file_path: Union[str, Path]) -> None:
     """
     Validate that the given file path exists and points to a file.
