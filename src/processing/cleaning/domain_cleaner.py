@@ -1,11 +1,12 @@
 import pandas as pd
 import tldextract
 import re
+from typing import Optional
 
 from config.logger_config import logger
 
 
-def normalize_domain(domain: str) -> str | None:
+def normalize_domain(domain: str) -> Optional[str]:
     """
     Normalize domain by removing protocol, www, and lowercasing.
     """
@@ -38,7 +39,7 @@ def is_valid_domain(domain: str) -> bool:
     return bool(extracted.domain and extracted.suffix)
 
 
-def detect_domain_source(domain: str) -> str | None:
+def detect_domain_source(domain: str) -> Optional[str]:
     """
     Identify source of domain.
     """
@@ -59,6 +60,7 @@ def clean_domain(df: pd.DataFrame) -> pd.DataFrame:
     df["website_raw"] = df["domain"]
 
     # Normalize into domain
+    logger.info("Validating and normalizing domains")
     df["domain"] = df["domain"].apply(normalize_domain)
 
     df["is_valid_domain"] = df["domain"].apply(is_valid_domain)
@@ -68,5 +70,7 @@ def clean_domain(df: pd.DataFrame) -> pd.DataFrame:
     logger.info(f"valid domain count: {valid_count} | invalid domain count: {invalid_count}")
 
     df["domain_source"] = df["domain"].apply(detect_domain_source)
+    count_domain_source = df["domain_source"].value_counts().to_dict()
+    logger.info(f"Domain sources detected:\n{count_domain_source}")
 
     return df
