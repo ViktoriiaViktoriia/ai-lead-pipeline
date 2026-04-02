@@ -27,7 +27,6 @@ SIZE_MAPPING = {
     "10000+": "enterprise",
 }
 
-
 INDUSTRY_MAPPING = {
     "information technology": "tech",
     "it services": "tech",
@@ -45,3 +44,26 @@ INDUSTRY_MAPPING = {
     "education": "education",
     "education administration programs": "education",
 }
+
+NORDICS = ["FI", "SE", "NO", "DK", "IS"]
+
+EU = [
+    "FI", "SE", "NO", "DK", "IS",
+    "DE", "NL", "FR", "ES", "IT",
+    "PL", "BE", "AT", "IE"
+]
+
+SIZE_SCORE_MAP = {
+    "enterprise": 3,
+    "large": 3,
+    "medium": 2,
+    "small": 1
+}
+
+PRIORITY_WEIGHTS = {
+    "geo": 3,
+    "size": 2,
+    "missing": 4
+}
+
+MAX_TEST_CALLS = 5
