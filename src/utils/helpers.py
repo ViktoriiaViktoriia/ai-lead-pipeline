@@ -1,10 +1,11 @@
 from pathlib import Path
 import pandas as pd
 from typing import List, Optional
+from typing import Union
 
 
 def sample_parquet_folder(
-    folder_path: str,
+    folder_path: Union[str, Path],
     n_files: int = 3,
     columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
