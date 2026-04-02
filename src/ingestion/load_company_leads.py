@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Optional
 from pathlib import Path
+from typing import Union
 
 from config.logger_config import logger
 from src.schemas import prepare_schema
@@ -65,7 +66,7 @@ def add_metadata(df: pd.DataFrame) -> pd.DataFrame:
 
 def process_leads_in_chunks(input_path, output_path, chunk_size=50000):
     """
-        Process large CSV file in chunks and save cleaned output.
+        Process large CSV file in chunks and save cleaned output as parquet files.
     """
 
     first_chunk = True
@@ -104,18 +105,21 @@ def process_leads_in_chunks(input_path, output_path, chunk_size=50000):
     logger.info("Finished processing large CSV")
 
 
-def load_raw_leads(input_path: str, output_path: str) -> None:
+def load_raw_leads(input_path: Union[str, Path], output_path: Union[str, Path]) -> None:
     """
-    Full ingestion pipeline for raw company leads dataset.
-
-    - Validates input file path.
-    - Processes dataset in chunks.
-    - Applies basic cleaning and metadata.
-    - Saves cleaned chunks to output CSV.
+    Load raw company leads dataset from CSV, process it in chunks,
+    and store the result as partitioned Parquet files.
 
     Args:
-        input_path (str or Path): Path to the raw CSV file.
-        output_path (str or Path): Path where processed CSV will be saved.
+        input_path (str): Path to the raw CSV dataset.
+        output_path (str): Directory where processed Parquet files
+                           (chunked) will be saved.
+
+    Notes:
+        - The output is stored as multiple Parquet files (one per chunk),
+          not a single file.
+        - This approach is used to handle large datasets efficiently
+          without loading all data into memory.
     """
 
     # Input path
