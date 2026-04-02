@@ -73,28 +73,33 @@ def process_leads_in_chunks(input_path, output_path, chunk_size=50000):
 
     for chunk in pd.read_csv(input_path, chunksize=chunk_size):
 
-        # Shows rows and columns
-        logger.info(f"Processing chunk: #{chunk_number + 1} with shape: {chunk.shape}")
+        try:
+            # Shows rows and columns
+            logger.info(f"Processing chunk: #{chunk_number + 1} with shape: {chunk.shape}")
 
-        # Apply pipeline steps
-        chunk = prepare_schema(chunk)
-        chunk = drop_empty_rows(chunk)
-        chunk = add_metadata(chunk)
+            # Apply pipeline steps
+            chunk = prepare_schema(chunk)
+            chunk = drop_empty_rows(chunk)
+            chunk = add_metadata(chunk)
 
-        # Profile the first chunk
-        if first_chunk:
-            profile_dataset(chunk, logger)
-            logger.info(f"First 5 rows of this chunk:\n{chunk.head().to_dict(orient='records')}")
+            # Profile the first chunk
+            if first_chunk:
+                profile_dataset(chunk, logger)
+                logger.info(f"First 5 rows of this chunk:\n{chunk.head().to_dict(orient='records')}")
 
-        # Save result
-        chunk.to_parquet(
-            output_path / f"chunk_{chunk_number:04d}.parquet",
-            engine="pyarrow",
-            index=False
-        )
+            # Save result
+            chunk.to_parquet(
+                output_path / f"chunk_{chunk_number:04d}.parquet",
+                engine="pyarrow",
+                index=False
+            )
 
-        chunk_number += 1
-        first_chunk = False
+            chunk_number += 1
+            first_chunk = False
+
+        except Exception as e:
+            logger.error(f"Failed processing chunk #{chunk_number}: {e}")
+            continue
 
     logger.info("Finished processing large CSV")
 
