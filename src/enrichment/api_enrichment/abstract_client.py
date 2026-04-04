@@ -9,6 +9,8 @@ class AbstractClient:
     Client for Abstract Company Enrichment API
     """
 
+    REQUIRED_FIELDS = ["company_name", "industry", "country"]
+
     def __init__(self, api_key: str, base_url: str):
         self.api_key = api_key
         self.base_url = base_url
@@ -38,8 +40,7 @@ class AbstractClient:
             )
 
             # Check HTTP status
-            if response.status_code != 200:
-                raise Exception(f"Failed to fetch data for {domain}: {response.status_code} {response.text}")
+            response.raise_for_status()
 
             self.request_count += 1
 
@@ -47,7 +48,7 @@ class AbstractClient:
             data = response.json()
 
             if not data:
-                logger.warning(f"No data returned from Abstarct company enrichment API for domain: {domain}")
+                logger.warning(f"No data returned from Abstract company enrichment API for domain: {domain}")
                 return None
 
             return {
@@ -72,9 +73,8 @@ class AbstractClient:
                 "technologies": data.get("technologies", []),
                 "type": data.get("type"),
                 "global_ranking": data.get("global_ranking"),
-                "source": "abstract"
             }
 
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logger.error(f"Abstract API failed for domain: {domain}: {e}",  exc_info=True)
             return None
