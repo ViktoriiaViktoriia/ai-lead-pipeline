@@ -66,4 +66,10 @@ PRIORITY_WEIGHTS = {
     "missing": 4
 }
 
-MAX_TEST_CALLS = 5
+RUN_MODE = "dry"  # "dry" | "mock" | "limited" | "full"
+
+TEST_API_CALLS_LIMIT = 3
+FULL_API_CALLS_LIMIT = 95
+
+MAX_RETRIES = 2
+BACKOFF_SEC = 2
