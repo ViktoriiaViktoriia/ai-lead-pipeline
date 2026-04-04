@@ -9,6 +9,8 @@ class TechnologyCheckerClient:
     Client for Technologychecker.io: Company data by domain API
     """
 
+    REQUIRED_FIELDS = ["company_name", "industry", "country"]
+
     def __init__(self, api_key: str, base_url: str):
         self.api_key = api_key
         self.base_url = base_url
@@ -37,9 +39,7 @@ class TechnologyCheckerClient:
             )
 
             # Check HTTP status
-            if response.status_code != 200:
-                raise Exception(f"Thechnologychecker.io API failed to fetch data "
-                                f"for {domain}: {response.status_code} {response.text}")
+            response.raise_for_status()
 
             self.request_count += 1
 
@@ -72,9 +72,8 @@ class TechnologyCheckerClient:
                 "technologies": None,
                 "type": None,
                 "global_ranking": None,
-                "source": "technologycheker"
             }
 
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logger.error(f"Thechnologycheker.io API failed for domain: {domain}: {e}",  exc_info=True)
             return None
