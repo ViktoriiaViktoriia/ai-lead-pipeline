@@ -66,6 +66,8 @@ PRIORITY_WEIGHTS = {
     "missing": 4
 }
 
+REQUIRED_FIELDS = ["company_name", "industry", "country"]
+
 RUN_MODE = "dry"  # "dry" | "mock" | "limited" | "full"
 
 TEST_API_CALLS_LIMIT = 3
@@ -73,3 +75,6 @@ FULL_API_CALLS_LIMIT = 95
 
 MAX_RETRIES = 2
 BACKOFF_SEC = 2
+
+TOP_LEADS_LIMIT = 100
+CHECKPOINT_INTERVAL = 5
