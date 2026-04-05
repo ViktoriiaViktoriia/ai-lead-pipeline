@@ -1,0 +1,20 @@
+# Core data processing
+pandas
+pyarrow
+
+# API requests
+requests
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Environment variables
+python-dotenv
+
+# Testing
+pytest
+pytest-mock
+
+# Optional: better logging / debugging
+loguru
