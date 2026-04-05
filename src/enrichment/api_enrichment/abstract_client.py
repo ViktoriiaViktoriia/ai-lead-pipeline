@@ -2,6 +2,7 @@ import requests
 from typing import Optional, Dict
 
 from config.logger_config import logger
+from config.variables import REQUIRED_FIELDS
 
 
 class AbstractClient:
@@ -9,7 +10,7 @@ class AbstractClient:
     Client for Abstract Company Enrichment API
     """
 
-    REQUIRED_FIELDS = ["company_name", "industry", "country"]
+    abstract_required_fields = REQUIRED_FIELDS
 
     def __init__(self, api_key: str, base_url: str):
         self.api_key = api_key
