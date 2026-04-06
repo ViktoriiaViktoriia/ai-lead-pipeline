@@ -5,28 +5,24 @@ from src.enrichment.run_mode import (should_process_row, normalize_data,
 
 
 # Test handle_run_mode()
-def test_handle_run_mode_dry(mock_run_mode):
-    with mock_run_mode("dry"):
-        result = handle_run_mode("test.com", 0, 10)
-        assert result == "continue"
+def test_handle_run_mode_dry():
+    result = handle_run_mode("test.com", 0, 10, "dry")
+    assert result == "continue"
 
 
-def test_handle_run_mode_mock(mock_run_mode):
-    with mock_run_mode("mock"):
-        result = handle_run_mode("test.com", 0, 10)
-        assert result == "mock"
+def test_handle_run_mode_mock():
+    result = handle_run_mode("test.com", 0, 10, "mock")
+    assert result == "mock"
 
 
-def test_handle_run_mode_limited_below_limit(mock_run_mode):
-    with mock_run_mode("limited"):
-        result = handle_run_mode("test.com", 5, 10)
-        assert result == "proceed"
+def test_handle_run_mode_limited_below_limit():
+    result = handle_run_mode("test.com", 5, 10, "limited")
+    assert result == "proceed"
 
 
-def test_handle_run_mode_full(mock_run_mode):
-    with mock_run_mode("full"):
-        result = handle_run_mode("test.com", 10, 10)
-        assert result == "break"
+def test_handle_run_mode_full():
+    result = handle_run_mode("test.com", 10, 10, "full")
+    assert result == "break"
 
 
 # Test should_process_row()
