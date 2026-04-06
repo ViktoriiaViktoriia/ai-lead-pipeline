@@ -54,7 +54,6 @@ def test_enrich_company_chunk_integration(
     seen_domains = set()
 
     df_top = chunk.iloc[:2]
-    df_rest = chunk.iloc[2:]
 
     mock_select_top_leads.return_value = df_top
 
@@ -129,8 +128,17 @@ def test_enrich_company_parquet(mock_enrich_chunk, tmp_path):
 
     mock_enrich_chunk.return_value = (df_enriched, {"a.com"})
 
+    mock_abstract_client = Mock()
+    mock_tech_client = Mock()
+
     # Run function
-    enrich_company_parquet(input_dir, output_dir, seen_file)
+    enrich_company_parquet(
+        input_dir,
+        output_dir,
+        seen_file,
+        abstract_client=mock_abstract_client,
+        tech_client=mock_tech_client
+    )
 
     # Output file created
     output_files = list(output_dir.glob("*.parquet"))
@@ -164,6 +172,16 @@ def test_enrich_company_parquet_empty(mock_enrich_chunk, tmp_path):
 
     mock_enrich_chunk.return_value = (pd.DataFrame(), set())
 
-    enrich_company_parquet(input_dir, output_dir, seen_file)
+    mock_abstract_client = Mock()
+    mock_tech_client = Mock()
+
+    # Run function
+    enrich_company_parquet(
+        input_dir,
+        output_dir,
+        seen_file,
+        abstract_client=mock_abstract_client,
+        tech_client=mock_tech_client
+    )
 
     assert not list(output_dir.glob("*.parquet"))
