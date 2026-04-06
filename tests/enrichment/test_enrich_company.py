@@ -29,6 +29,7 @@ def test_enrich_company_chunk(mock_process, sample_df_large, seen_domains):
     result_df, seen = enrich_company_chunk(
         sample_df_large,
         seen_domains,
+        mode="full",
         abstract_client=Mock(),
         tech_client=Mock()
     )
@@ -89,6 +90,7 @@ def test_enrich_company_chunk_integration(
     result_df, seen = enrich_company_chunk(
         chunk,
         seen_domains=seen_domains,
+        mode="full",
         abstract_client=mock_abstract_client,
         tech_client=mock_tech_client
     )
@@ -136,6 +138,7 @@ def test_enrich_company_parquet(mock_enrich_chunk, tmp_path):
         input_dir,
         output_dir,
         seen_file,
+        mode="full",
         abstract_client=mock_abstract_client,
         tech_client=mock_tech_client
     )
@@ -168,7 +171,9 @@ def test_enrich_company_parquet_empty(mock_enrich_chunk, tmp_path):
     seen_file = tmp_path / "seen.csv"
 
     df_input = pd.DataFrame([{"domain": "a.com"}])
-    (input_dir / "test.parquet").write_bytes(df_input.to_parquet())
+    # (input_dir / "test.parquet").write_bytes(df_input.to_parquet())
+    file_path = input_dir / "test.parquet"
+    df_input.to_parquet(file_path)
 
     mock_enrich_chunk.return_value = (pd.DataFrame(), set())
 
@@ -180,6 +185,7 @@ def test_enrich_company_parquet_empty(mock_enrich_chunk, tmp_path):
         input_dir,
         output_dir,
         seen_file,
+        mode="full",
         abstract_client=mock_abstract_client,
         tech_client=mock_tech_client
     )
