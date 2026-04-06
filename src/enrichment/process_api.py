@@ -13,7 +13,8 @@ def process_api_batch(
     source_name: str,
     required_fields: Sequence[str],
     call_limit: int,
-    seen_domains: set
+    seen_domains: set,
+    mode: str,
 ) -> tuple[list[dict], set, int]:
     """
     Process a batch of company records and enrich them using a specified API client.
@@ -28,6 +29,7 @@ def process_api_batch(
         required_fields (Sequence[str]): List or sequence of required fields expected in the API response.
         call_limit (int): Maximum number of API calls allowed for this batch (used in limited/full run modes).
         seen_domains (set): Set of domains that have already been processed.
+        mode (str): Identifier for the run mode.
 
     Returns:
         tuple:
@@ -40,7 +42,7 @@ def process_api_batch(
     enriched_rows: list[dict] = []
     calls_made = 0
 
-    logger.info(f"RUN MODE: {RUN_MODE}")
+    logger.info(f"RUN MODE: {mode}")
 
     for _, row in df.iterrows():
 
@@ -50,7 +52,6 @@ def process_api_batch(
             break
 
         domain = row.get("domain")
-        print("domain:", domain)
 
         if not domain:
             continue
@@ -59,7 +60,7 @@ def process_api_batch(
             continue
 
         # ---------------- RUN MODE ----------------
-        mode_action = handle_run_mode(domain, calls_made, call_limit)
+        mode_action = handle_run_mode(domain, calls_made, call_limit, mode)
 
         if mode_action == "continue":
             seen_domains.add(domain)
@@ -67,7 +68,7 @@ def process_api_batch(
 
         if mode_action == "mock":
             enriched = row.to_dict()
-            print("enriched ro to dict:", enriched)
+
             enriched.update({
                 "company_name": f"mock_{source_name}",
                 "industry": "mock_industry",
@@ -75,10 +76,8 @@ def process_api_batch(
                 "country": "mock_location",
                 "source": f"{source_name}_mock",
             })
-            print("enriched update, mock:", enriched)
             enriched_rows.append(enriched)
             seen_domains.add(domain)
-            print("mode: mock, action:continue, domain:", domain)
             continue
 
         if mode_action == "break":
@@ -86,23 +85,20 @@ def process_api_batch(
 
         # ---------------- REAL API ----------------
         api_data = call_api_with_retry(client, domain, source_name)
-        print("api data:", api_data)
 
         if not api_data:
             continue
 
         if not validate_api_data(api_data, required_fields):
-            print("valid data, mode: real api:", validate_api_data, required_fields)
             logger.warning(f"Incomplete data for {domain}")
             continue
 
         enriched = normalize_data(row, api_data, source_name)
-        print("enriched , mode: real api:", enriched)
 
         enriched_rows.append(enriched)
-        print("enriched rows to return after append, mode real api:", enriched_rows)
+
         seen_domains.add(domain)
-        print("mode: real api, domains seen before:", seen_domains)
+
         calls_made += 1
 
     return enriched_rows, seen_domains, calls_made
