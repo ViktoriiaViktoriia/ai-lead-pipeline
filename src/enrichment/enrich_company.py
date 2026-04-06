@@ -3,19 +3,20 @@ import pandas as pd
 from typing import Optional
 
 from config.logger_config import logger
-from config.config import (get_primary_api_key_abstract, BASE_URL_ABSTRACT,
-                           BASE_URL_TECHNOLOGYCHEKER, get_api_token_technology)
-from config.variables import (RUN_MODE, TEST_API_CALLS_LIMIT, FULL_API_CALLS_LIMIT,
+from config.variables import (TEST_API_CALLS_LIMIT, FULL_API_CALLS_LIMIT,
                               TOP_LEADS_LIMIT, CHECKPOINT_INTERVAL)
+
 from src.enrichment.selection.lead_prioritizer import select_top_leads
 from src.enrichment.api_enrichment.abstract_client import AbstractClient
 from src.enrichment.api_enrichment.technologychecker_client import TechnologyCheckerClient
+from src.enrichment.api_enrichment.clients import create_abstract_client, create_tech_client
 from src.enrichment.process_api import process_api_batch
 
 
 def enrich_company_chunk(
     chunk: pd.DataFrame,
     seen_domains: set,
+    mode: str,
     abstract_client: AbstractClient,
     tech_client: TechnologyCheckerClient
 ) -> tuple[pd.DataFrame, set]:
@@ -24,25 +25,19 @@ def enrich_company_chunk(
      Technologychecker API for next  100 leads.
 
     Args:
-        chunk (pd.DataFrame):
-            Input DataFrame containing company records to enrich. Must include a "domain" column.
-
-        seen_domains (set):
-            Set of domains already processed in previous batches or earlier in the pipeline.
-            This set is updated in-place to prevent duplicate API calls.
-
-        abstract_client (AbstractClient):
-            Client instance for interacting with the Abstract API.
-            Must provide `abstract_required_fields` for response validation.
-
-        tech_client (TechnologyCheckerClient):
-            Client instance for interacting with the TechnologyChecker API.
-            Must provide `tech_required_fields` for response validation.
+        chunk (pd.DataFrame): Input DataFrame containing company records to enrich.
+                              Must include a "domain" column.
+        seen_domains (set): Set of domains already processed in previous batches or earlier in the pipeline.
+                            This set is updated in-place to prevent duplicate API calls.
+        mode (str): Run mode identifier.
+        abstract_client (AbstractClient): Client instance for interacting with the Abstract API.
+                                          Must provide `abstract_required_fields` for response validation.
+        tech_client (TechnologyCheckerClient): Client instance for interacting with the TechnologyChecker API.
+                                               Must provide `tech_required_fields` for response validation.
 
     Returns:
         tuple:
-            - pd.DataFrame:
-                DataFrame containing enriched company data from both APIs.
+            - pd.DataFrame: DataFrame containing enriched company data from both APIs.
                 If no data is enriched, returns an empty DataFrame with expected columns.
 
     """
@@ -54,7 +49,7 @@ def enrich_company_chunk(
     logger.info(f"Top leads (Abstract): {len(df_top)}")
     logger.info(f"Next leads (TechnologyChecker): {len(df_rest)}")
 
-    call_limit = TEST_API_CALLS_LIMIT if RUN_MODE == "limited" else FULL_API_CALLS_LIMIT
+    call_limit = TEST_API_CALLS_LIMIT if mode == "limited" else FULL_API_CALLS_LIMIT
 
     # ---------------- Abstract ----------------
     abstract_rows, seen_domains, abstract_calls = process_api_batch(
@@ -63,7 +58,8 @@ def enrich_company_chunk(
         source_name="abstract",
         required_fields=abstract_client.abstract_required_fields,
         call_limit=call_limit,
-        seen_domains=seen_domains
+        seen_domains=seen_domains,
+        mode=mode
     )
 
     # ---------------- TechnologyChecker ----------------
@@ -73,7 +69,8 @@ def enrich_company_chunk(
         source_name="technologychecker",
         required_fields=tech_client.tech_required_fields,
         call_limit=call_limit,
-        seen_domains=seen_domains
+        seen_domains=seen_domains,
+        mode=mode
     )
 
     logger.info(f"Abstract calls made: {abstract_calls}")
@@ -94,6 +91,7 @@ def enrich_company_parquet(
     input_path: Path,
     output_path: Path,
     seen_domains_file: Path,
+    mode: str,
     abstract_client: Optional[AbstractClient] = None,
     tech_client: Optional[TechnologyCheckerClient] = None
 ):
@@ -110,6 +108,7 @@ def enrich_company_parquet(
         output_path (Path): Directory where the final enriched parquet file will be saved.
         seen_domains_file (Path): Path to a CSV file used to persist processed domains between runs.
                                   If the file exists, it will be loaded at the start of the pipeline.
+        mode (str): Run mode identifier.
         abstract_client (AbstractClient): Client instance for interacting with the Abstract API.
         tech_client (TechnologyCheckerClient): Client instance for interacting with the TechnologyChecker API.
 
@@ -136,16 +135,10 @@ def enrich_company_parquet(
     # tech_client = TechnologyCheckerClient(api_key=get_api_token_technology(), base_url=BASE_URL_TECHNOLOGYCHEKER)
 
     if abstract_client is None:
-        abstract_client = AbstractClient(
-            api_key=get_primary_api_key_abstract(),
-            base_url=BASE_URL_ABSTRACT
-        )
+        abstract_client = create_abstract_client()
 
     if tech_client is None:
-        tech_client = TechnologyCheckerClient(
-            api_key=get_api_token_technology(),
-            base_url=BASE_URL_TECHNOLOGYCHEKER
-        )
+        tech_client = create_tech_client()
 
     parquet_files = sorted(input_path.glob("*.parquet"))
     logger.info(f"Found {len(parquet_files)} parquet files to process.")
@@ -162,6 +155,7 @@ def enrich_company_parquet(
             df_enriched, seen_domains = enrich_company_chunk(
                 df,
                 seen_domains,
+                mode,
                 abstract_client,
                 tech_client
             )
