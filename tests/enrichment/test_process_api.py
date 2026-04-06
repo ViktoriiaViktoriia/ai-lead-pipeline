@@ -17,7 +17,8 @@ def test_process_api_batch_success(
         source_name="abstract",
         required_fields=mock_abstract_client.REQUIRED_FIELDS,
         call_limit=10,
-        seen_domains=seen_domains
+        seen_domains=seen_domains,
+        mode="full"
     )
 
     assert len(rows) == len(sample_df_small)
@@ -48,7 +49,8 @@ def test_process_api_batch_respects_call_limit(
         source_name="abstract",
         required_fields=mock_abstract_client.REQUIRED_FIELDS,
         call_limit=1,
-        seen_domains=seen_domains
+        seen_domains=seen_domains,
+        mode="limited"
     )
 
     assert calls == 1
@@ -69,7 +71,8 @@ def test_process_api_batch_skips_seen_domains(
         source_name="abstract",
         required_fields=mock_abstract_client.REQUIRED_FIELDS,
         call_limit=1,
-        seen_domains=seen_domains
+        seen_domains=seen_domains,
+        mode="limited"
     )
 
     assert "a.com" in seen
