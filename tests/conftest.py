@@ -20,6 +20,52 @@ def sample_df_mid():
 
 
 @pytest.fixture
+def sample_df_large():
+    df = pd.DataFrame([
+        {
+            "id": 0,
+            "domain": "a.com",
+            "company_name": "A Inc",
+            "industry": "Tech",
+            "country": "FI",
+            "size_category": "small",
+            "is_valid_domain": True,
+        },
+        {
+            "id": 1,
+            "domain": None,
+            "company_name": "B Ltd",
+            "industry": "IT",
+            "country": "FI",
+            "size_category": "medium",
+            "is_valid_domain": False,
+        },
+        {
+            "id": 2,
+            "domain": "c.com",
+            "company_name": "C Ltd",
+            "industry": None,
+            "country": None,
+            "size_category": None,
+            "is_valid_domain": True,
+        },
+        {
+            "id": 3,
+            "domain": "d.com",
+            "company_name": "D Inc",
+            "industry": "Tech",
+            "country": "FI",
+            "size_category": "unknown_value",
+            "is_valid_domain": True,
+        }
+    ])
+
+    df["is_valid_domain"] = df["domain"].notna()
+
+    return df
+
+
+@pytest.fixture
 def seen_domains():
     return set()
 
