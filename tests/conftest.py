@@ -3,6 +3,16 @@ import pandas as pd
 from unittest.mock import Mock, patch
 
 
+@pytest.fixture(autouse=True)
+def block_network(monkeypatch):
+    def fake_request(*args, **kwargs):
+        raise RuntimeError("Real API call blocked during tests")
+
+    # Block common request methods
+    monkeypatch.setattr("requests.get", fake_request)
+    monkeypatch.setattr("requests.post", fake_request)
+
+
 @pytest.fixture
 def sample_df_small():
     return pd.DataFrame([
