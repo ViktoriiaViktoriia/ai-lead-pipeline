@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+from typing import Optional
 
 from config.logger_config import logger
 from config.config import (get_primary_api_key_abstract, BASE_URL_ABSTRACT,
@@ -92,7 +93,9 @@ def enrich_company_chunk(
 def enrich_company_parquet(
     input_path: Path,
     output_path: Path,
-    seen_domains_file: Path
+    seen_domains_file: Path,
+    abstract_client: Optional[AbstractClient] = None,
+    tech_client: Optional[TechnologyCheckerClient] = None
 ):
     """
     Process parquet files for company enrichment and persist results.
@@ -107,6 +110,8 @@ def enrich_company_parquet(
         output_path (Path): Directory where the final enriched parquet file will be saved.
         seen_domains_file (Path): Path to a CSV file used to persist processed domains between runs.
                                   If the file exists, it will be loaded at the start of the pipeline.
+        abstract_client (AbstractClient): Client instance for interacting with the Abstract API.
+        tech_client (TechnologyCheckerClient): Client instance for interacting with the TechnologyChecker API.
 
     Returns:
         None
@@ -127,8 +132,20 @@ def enrich_company_parquet(
 
     output_path.mkdir(parents=True, exist_ok=True)
 
-    abstract_client = AbstractClient(api_key=get_primary_api_key_abstract(), base_url=BASE_URL_ABSTRACT)
-    tech_client = TechnologyCheckerClient(api_key=get_api_token_technology(), base_url=BASE_URL_TECHNOLOGYCHEKER)
+    # abstract_client = AbstractClient(api_key=get_primary_api_key_abstract(), base_url=BASE_URL_ABSTRACT)
+    # tech_client = TechnologyCheckerClient(api_key=get_api_token_technology(), base_url=BASE_URL_TECHNOLOGYCHEKER)
+
+    if abstract_client is None:
+        abstract_client = AbstractClient(
+            api_key=get_primary_api_key_abstract(),
+            base_url=BASE_URL_ABSTRACT
+        )
+
+    if tech_client is None:
+        tech_client = TechnologyCheckerClient(
+            api_key=get_api_token_technology(),
+            base_url=BASE_URL_TECHNOLOGYCHEKER
+        )
 
     parquet_files = sorted(input_path.glob("*.parquet"))
     logger.info(f"Found {len(parquet_files)} parquet files to process.")
