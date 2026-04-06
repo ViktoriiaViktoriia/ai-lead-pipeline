@@ -1,10 +1,11 @@
 import pandas as pd
+from typing import Optional
 
 from config.variables import (NORDICS, EU, SIZE_SCORE_MAP, PRIORITY_WEIGHTS)
 from config.logger_config import logger
 
 
-def assign_geo_priority(country: str) -> int:
+def assign_geo_priority(country: Optional[str]) -> int:
     """
     Assign geographic priority score.
     """
@@ -41,14 +42,20 @@ def compute_priority_score(df: pd.DataFrame) -> pd.DataFrame:
             df["size_category"]
             .map(SIZE_SCORE_MAP)
             .fillna(1)
+            .astype("int64")
         )
 
         # Missing data score
         df["data_missing_score"] = (
             df[["industry", "size_category", "country"]]
             .isna()
+            .astype("int64")
             .sum(axis=1)
         )
+
+        df["geo_priority"] = df["geo_priority"].astype("int64")
+        df["size_score"] = df["size_score"].astype("int64")
+        df["data_missing_score"] = df["data_missing_score"].astype("int64")
 
         # Final score
         df["priority_score"] = (
@@ -79,7 +86,7 @@ def select_top_leads(df: pd.DataFrame, limit: int = 100) -> pd.DataFrame:
         df_filtered = df[
             (df["company_name"].notna()) &
             (df["domain"].notna()) &
-            (df["is_valid_domain"] == True)
+            (df["is_valid_domain"].fillna(False).astype(bool))   # df["is_valid_domain"] == True
         ].copy()
 
         logger.info(
@@ -99,7 +106,8 @@ def select_top_leads(df: pd.DataFrame, limit: int = 100) -> pd.DataFrame:
         df_top = df_sorted.head(limit)
 
         logger.info(
-            f"Selected top {len(df_top)} leads for enrichment"
+            f"Selected top: {len(df_top)} leads for enrichment.\n"
+            f"Remaining estimated rest: {initial_count-len(df_top)}."
         )
 
         logger.info(
