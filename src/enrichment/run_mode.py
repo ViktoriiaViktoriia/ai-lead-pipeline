@@ -3,37 +3,33 @@ import time
 from typing import Optional
 
 from config.logger_config import logger
-from config.variables import RUN_MODE, MAX_RETRIES, BACKOFF_SEC, REQUIRED_FIELDS
+from config.variables import MAX_RETRIES, BACKOFF_SEC, REQUIRED_FIELDS
 from src.utils.helpers import rate_limited
 
 
-def handle_run_mode(domain: str, calls_made: int, limit: int):
+def handle_run_mode(domain, calls_made, limit, mode):
     """
-    Controls execution based on RUN_MODE.
+       Controls execution based on run mode.
 
-    Args:
-        domain (str): Domain name.
-        calls_made (int): Number of API calls made.
-        limit (int): API calls limit.
+       Args:
+           domain (str): Domain name.
+           calls_made (int): Number of API calls made.
+           limit (int): API calls limit.
+           mode (str): Run mode.
 
-    Returns: ("continue" | "mock" | "break" | "proceed")
+       Returns: ("continue" | "mock" | "break" | "proceed")
     """
+    if mode in ("limited", "full") and calls_made >= limit:
+        logger.info("API limit reached.")
+        return "break"
 
-    if RUN_MODE == "dry":
+    if mode == "dry":
         logger.info(f"[DRY RUN] Would call API for: {domain}")
         return "continue"
 
-    if RUN_MODE == "mock":
+    if mode == "mock":
         logger.info(f"[MOCK_RUN] Mock API call for {domain}")
         return "mock"
-
-    if RUN_MODE == "limited" and calls_made >= limit:
-        logger.info(f"API test limit reached.")
-        return "break"
-
-    if RUN_MODE == "full" and calls_made >= limit:
-        logger.info(f"API full limit reached.")
-        return "break"
 
     return "proceed"
 
