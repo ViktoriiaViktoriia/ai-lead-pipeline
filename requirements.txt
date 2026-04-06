@@ -15,6 +15,7 @@ python-dotenv
 # Testing
 pytest
 pytest-mock
+pytest-cov
 
 # Optional: better logging / debugging
 loguru
