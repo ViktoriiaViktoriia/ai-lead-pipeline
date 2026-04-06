@@ -20,13 +20,22 @@ CLEANED_DATA_PATH = DATA_DIR / "processed" / "cleaned"
 BASE_URL_ABSTRACT = os.getenv("BASE_URL_ABSTRACT")
 PRIMARY_API_KEY_ABSTRACT = os.getenv("PRIMARY_API_KEY_ABSTRACT")
 
-if not PRIMARY_API_KEY_ABSTRACT:
-    raise ValueError("PRIMARY_API_KEY_ABSTRACT is missing in .env")
+
+# Validation only when key is actually used
+def get_primary_api_key_abstract() -> str:
+    value = os.getenv("PRIMARY_API_KEY_ABSTRACT")
+    if not value:
+        raise ValueError("PRIMARY_API_KEY_ABSTRACT is missing in .env")
+    return value
 
 
 # Technologychecker company enrichment API
 BASE_URL_TECHNOLOGYCHEKER = os.getenv("BASE_URL_TECHNOLOGYCHEKER")
 API_TOKEN_TECHNOLOGYCHEKER = os.getenv("API_TOKEN_TECHNOLOGYCHEKER")
 
-if not API_TOKEN_TECHNOLOGYCHEKER:
-    raise ValueError("API_TOKEN_TECHNOLOGYCHEKER is missing in .env")
+
+def get_api_token_technology() -> str:
+    value = os.getenv("API_TOKEN_TECHNOLOGYCHEKER")
+    if not value:
+        raise ValueError("API_TOKEN_TECHNOLOGYCHEKER is missing in .env")
+    return value
