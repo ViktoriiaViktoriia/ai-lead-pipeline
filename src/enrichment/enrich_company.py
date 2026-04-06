@@ -2,8 +2,8 @@ from pathlib import Path
 import pandas as pd
 
 from config.logger_config import logger
-from config.config import (PRIMARY_API_KEY_ABSTRACT, BASE_URL_ABSTRACT,
-                           BASE_URL_TECHNOLOGYCHEKER, API_TOKEN_TECHNOLOGYCHEKER)
+from config.config import (get_primary_api_key_abstract, BASE_URL_ABSTRACT,
+                           BASE_URL_TECHNOLOGYCHEKER, get_api_token_technology)
 from config.variables import (RUN_MODE, TEST_API_CALLS_LIMIT, FULL_API_CALLS_LIMIT,
                               TOP_LEADS_LIMIT, CHECKPOINT_INTERVAL)
 from src.enrichment.selection.lead_prioritizer import select_top_leads
@@ -48,7 +48,7 @@ def enrich_company_chunk(
 
     df_top = select_top_leads(chunk, limit=TOP_LEADS_LIMIT)
     df_rest = chunk.drop(df_top.index)
-    #df_rest = chunk.loc[~chunk.index.isin(df_top.index)]
+    # df_rest = chunk.loc[~chunk.index.isin(df_top.index)]
 
     logger.info(f"Top leads (Abstract): {len(df_top)}")
     logger.info(f"Next leads (TechnologyChecker): {len(df_rest)}")
@@ -127,8 +127,8 @@ def enrich_company_parquet(
 
     output_path.mkdir(parents=True, exist_ok=True)
 
-    abstract_client = AbstractClient(api_key=PRIMARY_API_KEY_ABSTRACT, base_url=BASE_URL_ABSTRACT)
-    tech_client = TechnologyCheckerClient(api_key=API_TOKEN_TECHNOLOGYCHEKER, base_url=BASE_URL_TECHNOLOGYCHEKER)
+    abstract_client = AbstractClient(api_key=get_primary_api_key_abstract(), base_url=BASE_URL_ABSTRACT)
+    tech_client = TechnologyCheckerClient(api_key=get_api_token_technology(), base_url=BASE_URL_TECHNOLOGYCHEKER)
 
     parquet_files = sorted(input_path.glob("*.parquet"))
     logger.info(f"Found {len(parquet_files)} parquet files to process.")
