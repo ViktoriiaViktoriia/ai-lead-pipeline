@@ -10,8 +10,16 @@ def normalize_company_name(name: str) -> Optional[str]:
     """
     Normalize company name: lowercase, remove special characters, remove legal suffixes.
     """
+    # Check name value
+    if not isinstance(name, str):
+        return None
 
     if pd.isna(name):
+        return None
+
+    try:
+        name = str(name)
+    except AttributeError:
         return None
 
     name = name.lower().strip()
