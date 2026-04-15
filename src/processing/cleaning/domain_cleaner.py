@@ -11,6 +11,8 @@ def normalize_domain(domain: str) -> Optional[str]:
     Normalize domain by removing protocol, www, and lowercasing.
     """
 
+    if not isinstance(domain, str):
+        return None
     if pd.isna(domain):
         return None
 
@@ -30,6 +32,10 @@ def is_valid_domain(domain: str) -> bool:
     Validate domain using tldextract.
     """
 
+    if not isinstance(domain, str):
+        return False
+
+    domain = domain.strip()
     if not domain:
         return False
 
