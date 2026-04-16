@@ -7,6 +7,7 @@ This project implements an AI-powered B2B lead (account) enrichment and scoring 
 
 The system demonstrates how modern data pipelines integrate multiple data sources, handle incomplete or inconsistent data, and apply intelligent enrichment to improve decision-making in sales processes. This project focuses on account-level (company-level) lead scoring rather than individual contacts, following a B2B sales approach.
 
+
 ## Features
 
 - Domain-based company enrichment pipeline
@@ -16,6 +17,7 @@ The system demonstrates how modern data pipelines integrate multiple data source
 - Feature engineering and rule-based lead scoring
 - End-to-end pipeline orchestration (Airflow)
 - Integration with CRM systems (HubSpot)
+
 
 ## Tech Stack
 
@@ -33,6 +35,8 @@ The system demonstrates how modern data pipelines integrate multiple data source
 
 ## Project Architecture
 
+### System Architecture (general graph)
+
         Airflow (orchestrates everything)
                   ↓
       Ingestion → Enrichment → Scoring
@@ -43,6 +47,25 @@ The system demonstrates how modern data pipelines integrate multiple data source
                   ↓
             HubSpot (push leads)
 
+
+### Data Flow Architecture (data-based graph)
+
+               Raw data
+                  ↓
+               Cleaning
+                  ↓
+    Lead prioritization (EU/Scandinavia based companies)
+                  ↓
+    Abstract (Company Enrichment API)
+                  ↓
+    Technologychecker.io (Company data by domain API) 
+                  ↓
+       AI enrichment (fill gaps)
+                  ↓
+         Feature engineering
+                  ↓
+               Scoring
+        
 
 ## Project Structure
 
@@ -55,7 +78,8 @@ The system demonstrates how modern data pipelines integrate multiple data source
 | ├── `config/`                                  | Stores configuration settings                                             |
 | │   ├── `__init__.py`                          | Initialize the config package                                             | 
 | │   ├── `config.py`                            | Stores environment variables (API keys, DB URL, constants)                |
-| │   └── `logger_config.py`                     | Logger configuration                                                      |
+| │   ├── `logger_config.py`                     | Logger configuration                                                      |
+| │   └── `variables.py`                         | Stores variables                                                          |
 | ├── `data/`                                    | Data storage layer for different pipeline stages                          |
 | │   ├── `companies_raw_2023_q4.CSV`            | Raw input dataset (Base dataset source)                                   |
 | │   ├── `processed/`                           | Stores intermediate pipeline outputs                                      |
@@ -131,6 +155,34 @@ The system demonstrates how modern data pipelines integrate multiple data source
 
 ## How to Get started
 
+Install required dependencies:
+pip install -r requirements.txt
+
+## How to run the pipeline
+
+1. Ingestion (run once). Loads raw company leads and prepares chunked data.
+python3 -m src.pipeline.main --ingestion 
+
+2. Cleaning (run once). Cleans and standardizes the dataset.
+python3 -m src.pipeline.main --cleaning
+
+3. Enrichment (run multiple times with different modes).
+  3.1. Dry run (no API calls):
+       python3 -m src.pipeline.main --enrichment --mode dry
+  3.2. Mock run (simulated API):
+       python3 -m src.pipeline.main --enrichment --mode mock
+  3.3. Limited run (safe API testing):
+       python3 -m src.pipeline.main --enrichment --mode limited
+  3.4. Full run (production):
+       python3 -m src.pipeline.main --enrichment --mode full
+
+       Full mode will prompt for confirmation before running.
+
+  Workflow explanation:
+  - Run ingestion and cleaning once to prepare data.
+  - Use mock or limited mode to test enrichment.
+  - Run full mode only when ready for production.
+
 
 ## Dataset source
 
@@ -141,8 +193,15 @@ under the [ODC Attribution License](https://opendatacommons.org/licenses/by/1-0/
 
 Company enrichment domain-based API: [Abstract](https://www.abstractapi.com/api/company-enrichment)
 
+Company enrichment domain-based API: [Technologychecker.io](https://technologychecker.io/docs/api-reference/company-data/company-data-by-domain-api)
+
+Priority-based enrichment:
+Top 100 → Abstract (high quality)
+Next → TechnologyChecker
 
 ## Tests
+
+PYTHONPATH=. pytest -s tests/
 
 
 ## Example Output
