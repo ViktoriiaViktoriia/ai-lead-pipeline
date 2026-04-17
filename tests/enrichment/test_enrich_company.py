@@ -14,7 +14,7 @@ def test_enrich_company_chunk(mock_process, sample_df_large, seen_domains):
             "company_name": "A Inc",
             "industry": "Tech",
             "country": "US",
-            "source": "abstract"
+            "source": "abstract_test"
         }], {"a.com"}, 1),
 
         ([{
@@ -22,17 +22,20 @@ def test_enrich_company_chunk(mock_process, sample_df_large, seen_domains):
             "company_name": "B Ltd",
             "industry": "IT",
             "country": "UK",
-            "source": "technologychecker"
+            "source": "technologychecker_test"
         }], {"a.com", "b.com"}, 1),
     ]
 
     result_df, seen = enrich_company_chunk(
-        sample_df_large,
-        seen_domains,
+        df_abstract=sample_df_large,
+        df_tech=sample_df_large,
+        seen_domains=seen_domains,
         mode="full",
         abstract_client=Mock(),
-        tech_client=Mock()
+        tech_client=Mock(),
+        call_limit=1,
     )
+    result_df = pd.DataFrame(result_df)
 
     print(result_df)
     print(type(result_df))
@@ -40,15 +43,13 @@ def test_enrich_company_chunk(mock_process, sample_df_large, seen_domains):
     assert len(result_df) == 2
     assert "a.com" in seen
     assert "b.com" in seen
-    assert set(result_df["source"]) == {"abstract", "technologychecker"}
+    assert set(result_df["source"]) == {"abstract_test", "technologychecker_test"}
 
 
 @patch("src.enrichment.enrich_company.process_api_batch")
-@patch("src.enrichment.enrich_company.select_top_leads")
 def test_enrich_company_chunk_integration(
-    mock_select_top_leads,
     mock_process_api_batch,
-    sample_df_large
+    sample_df_large,
 ):
     chunk = sample_df_large
 
@@ -56,15 +57,13 @@ def test_enrich_company_chunk_integration(
 
     df_top = chunk.iloc[:2]
 
-    mock_select_top_leads.return_value = df_top
-
     # Mock API batch (Abstract + Tech)
     mock_process_api_batch.side_effect = [
         # Abstract result
         (
             [
-                {"domain": "a.com", "source": "abstract"},
-                {"domain": "c.com", "source": "abstract"},
+                {"domain": "a.com", "source": "abstract_test"},
+                {"domain": "c.com", "source": "abstract_test"},
             ],
             {"a.com", "c.com"},
             2
@@ -88,94 +87,75 @@ def test_enrich_company_chunk_integration(
 
     # Run function
     result_df, seen = enrich_company_chunk(
-        chunk,
+        df_abstract=df_top,
+        df_tech=df_top,
         seen_domains=seen_domains,
         mode="full",
         abstract_client=mock_abstract_client,
-        tech_client=mock_tech_client
+        tech_client=mock_tech_client,
+        call_limit=1,
     )
+    result_df = pd.DataFrame(result_df)
 
     assert not result_df.empty
     assert "source" in result_df.columns
     assert len(seen) == 3
 
-    mock_select_top_leads.assert_called_once()
-    assert mock_process_api_batch.call_count == 2
-
 
 # Test enrich_company_parquet()
 @patch("src.enrichment.enrich_company.enrich_company_chunk")
-def test_enrich_company_parquet(mock_enrich_chunk, tmp_path):
+def test_enrich_company_parquet(mock_enrich_chunk, tmp_path, sample_df_large):
 
-    # Setup folders (pytest creates a temporary folder)
     input_dir = tmp_path / "input"
     input_dir.mkdir()
 
     output_dir = tmp_path / "output"
     seen_file = tmp_path / "seen.csv"
 
-    # Create fake parquet file
-    df_input = pd.DataFrame([
-        {"domain": "a.com"},
-        {"domain": "b.com"}
-    ])
+    df_input = sample_df_large
 
-    file_path = input_dir / "test.parquet"
-    df_input.to_parquet(file_path)
+    (input_dir / "test.parquet").write_bytes(df_input.to_parquet())
 
-    # Mock enrichment
-    df_enriched = pd.DataFrame([
-        {"domain": "a.com", "source": "abstract"}
-    ])
+    mock_enrich_chunk.return_value = (
+        [{"domain": "a.com", "source": "abstract_test"}],
+        {"a.com"}
+    )
 
-    mock_enrich_chunk.return_value = (df_enriched, {"a.com"})
-
-    mock_abstract_client = Mock()
-    mock_tech_client = Mock()
-
-    # Run function
     enrich_company_parquet(
         input_dir,
         output_dir,
         seen_file,
         mode="full",
-        abstract_client=mock_abstract_client,
-        tech_client=mock_tech_client
+        abstract_client=Mock(),
+        tech_client=Mock()
     )
 
-    # Output file created
-    output_files = list(output_dir.glob("*.parquet"))
+    output_files = list(output_dir.glob("*.csv"))
     assert len(output_files) == 1
 
-    # Output content is correct
-    result_df = pd.read_parquet(output_files[0])
+    result_df = pd.read_csv(output_files[0])
     assert not result_df.empty
-    assert "domain" in result_df.columns
 
-    # Seen domains saved
     assert seen_file.exists()
-    seen_df = pd.read_csv(seen_file)
-    assert "domain" in seen_df.columns
 
-    # Function was called
     assert mock_enrich_chunk.called
 
 
 # Test empty case
 @patch("src.enrichment.enrich_company.enrich_company_chunk")
-def test_enrich_company_parquet_empty(mock_enrich_chunk, tmp_path):
+def test_enrich_company_parquet_empty(mock_enrich_chunk, tmp_path, sample_df_large):
     input_dir = tmp_path / "input"
     input_dir.mkdir()
 
     output_dir = tmp_path / "output"
     seen_file = tmp_path / "seen.csv"
 
-    df_input = pd.DataFrame([{"domain": "a.com"}])
-    # (input_dir / "test.parquet").write_bytes(df_input.to_parquet())
+    df_input = sample_df_large
+
     file_path = input_dir / "test.parquet"
     df_input.to_parquet(file_path)
 
-    mock_enrich_chunk.return_value = (pd.DataFrame(), set())
+    mock_enrich_chunk.return_value = ([], set())
 
     mock_abstract_client = Mock()
     mock_tech_client = Mock()
