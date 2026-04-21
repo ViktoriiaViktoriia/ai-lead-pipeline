@@ -38,20 +38,10 @@ def sample_parquet_folder(
 @contextmanager
 def rate_limited(rate_per_sec: float = 1.0):
     """
-    Context manager to enforce API rate limiting. Wraps an API call and ensures that execution
-    respects a specified request rate by automatically applying delay after the operation.
+    Context manager to enforce API rate limiting.
+    Sleeps for the remaining time needed to maintain the rate limit.
 
-    Args:
-        rate_per_sec (float): Maximum number of allowed requests per second.
-
-    Behavior:
-        - Measures execution time of the wrapped block.
-        - Sleeps for the remaining time needed to maintain the rate limit.
+    Args: rate_per_sec (float): Maximum number of allowed requests per second.
     """
-
-    start_time = time.time()
     yield
-    elapsed = time.time() - start_time
-    sleep_time = max(0.0, (1.0 / rate_per_sec) - elapsed)
-    time.sleep(sleep_time)
-
+    time.sleep(rate_per_sec)
