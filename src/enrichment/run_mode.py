@@ -2,6 +2,8 @@ import pandas as pd
 import time
 from typing import Optional
 
+import requests.exceptions
+
 from config.logger_config import logger
 from config.variables import MAX_RETRIES, BACKOFF_SEC, REQUIRED_FIELDS
 from src.utils.helpers import rate_limited
@@ -51,6 +53,14 @@ def should_process_row(domain: Optional[str], seen_domains: set[str]) -> bool:
     if not domain:
         logger.info("No domain, skipping.")
         return False
+    if pd.isna(domain):
+        return False
+    if not isinstance(domain, str):
+        return False
+    if domain.strip() == "":
+        return False
+    if domain.lower() == "nan":
+        return False
 
     if domain in seen_domains:
         logger.info(f"Domain already enriched: {domain}, skipping.")
@@ -78,7 +88,7 @@ def call_api_with_retry(client, domain: str, source_name: str) -> dict | None:
         try:
             logger.info(f"[{source_name}] Calling API for {domain}, attempt {attempt+1}")
 
-            with rate_limited():
+            with rate_limited(3):
                 api_data = client.enrich_company(domain)
 
             if not api_data:
@@ -87,9 +97,19 @@ def call_api_with_retry(client, domain: str, source_name: str) -> dict | None:
 
             return api_data
 
+        except requests.exceptions.Timeout:
+            logger.warning(f"Timeout for {domain}, retrying...")
+        except requests.exceptions.ConnectionError:
+            logger.warning(f"Connection error for {domain}, retrying...")
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                logger.error("API limit reached - stopping")
+                break
         except Exception as e:
             logger.warning(f"{source_name} attempt {attempt+1} failed for {domain}: {e}")
-            time.sleep(BACKOFF_SEC * (2 ** attempt))
+
+        # backoff between retries
+        time.sleep(BACKOFF_SEC * (2 ** attempt))
 
     logger.error(f"All attempts failed for {source_name}: {domain}")
     return None
