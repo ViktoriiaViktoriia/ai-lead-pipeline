@@ -7,11 +7,11 @@ from config.variables import SIZE_SCORE_MAP
 
 # Test assign_geo_priority()
 def test_assign_geo_priority_nordics():
-    assert assign_geo_priority("FI") == 3
+    assert assign_geo_priority("FI") == 20
 
 
 def test_assign_geo_priority_eu():
-    assert assign_geo_priority("DE") == 2
+    assert assign_geo_priority("DE") == 10
 
 
 def test_assign_geo_priority_other():
@@ -33,10 +33,11 @@ def test_compute_priority_score_basic(sample_df_large):
 
     assert "priority_score" in result.columns
     assert "geo_priority" in result.columns
+    assert "industry_priority" in result.columns
     assert "size_score" in result.columns
     assert "data_missing_score" in result.columns
 
-    assert result.iloc[0]["geo_priority"] == 3  # FI → Nordics
+    assert result.iloc[0]["geo_priority"] == 20
     assert result.iloc[0]["size_score"] >= 1
 
 
@@ -66,6 +67,7 @@ def test_compute_priority_score_types_are_numeric(sample_df_large):
     result = compute_priority_score(sample_df_large)
 
     assert result["geo_priority"].dtype in ["int64", "int32"]
+    assert result["industry_priority"].dtype in ["int64", "int32"]
     assert result["size_score"].dtype in ["int64", "int32"]
     assert result["priority_score"].dtype in ["int64", "float64"]
 
@@ -79,7 +81,7 @@ def test_select_top_leads_filters_invalid_rows(sample_df_large):
     result = select_top_leads(sample_df_large)
 
     assert len(result) == 3
-    assert result.iloc[0]["domain"] == "c.com"
+    assert result.iloc[0]["domain"] == "a.com"
 
 
 def test_select_top_leads_respects_domain_validity(sample_df_large):
