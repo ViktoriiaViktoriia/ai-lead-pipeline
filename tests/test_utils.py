@@ -73,10 +73,10 @@ class RateLimitReached(Exception):
 
 
 # Create fake dataset
-def create_test_df(n=100):
+def create_test_df(n=200):
     return pd.DataFrame({
         "domain": [f"test{i}.com" for i in range(n)],
-        "country": ["SE"] * n,
+        "country": ["FI"] * n,
         "industry": ["tech"] * n,
         "company_name": [f"company{i}" for i in range(n)],
         "size_category": "1K - 2K",
@@ -85,7 +85,7 @@ def create_test_df(n=100):
 
 
 # Save as multiple parquet files
-def create_parquet_test_files(tmp_path, num_files=2, rows_per_file=50):
+def create_parquet_test_files(tmp_path, num_files=2, rows_per_file=100):
     for i in range(num_files):
         df = create_test_df(rows_per_file)
         df.to_parquet(tmp_path / f"file_{i}.parquet")
