@@ -15,9 +15,9 @@ def test_handles_429_and_stops_safely(tmp_path):
 
     input_path.mkdir()
 
-    create_parquet_test_files(input_path, num_files=1, rows_per_file=10)
+    create_parquet_test_files(input_path, num_files=1, rows_per_file=200)
 
-    client_abstract_test429 = MockClient429(fail_after=2)
+    client_abstract_test429 = MockClient429(fail_after=3)
     tech_client_test = MockTechClient()
 
     saved_files = []
@@ -43,7 +43,7 @@ def test_handles_429_and_stops_safely(tmp_path):
         logger.warning(f"{e} -> stopping {e.source}")
         return saved_files, seen_domains_file
 
-    assert len(saved_files) >= 0
+    assert len(saved_files) > 0
 
     assert client_abstract_test429.calls >= 0
 
