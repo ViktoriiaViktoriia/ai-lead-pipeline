@@ -85,7 +85,9 @@ def create_test_df(n=100):
 
 
 # Save as multiple parquet files
-def create_parquet_files(tmp_path, num_files=2, rows_per_file=50):
+def create_parquet_test_files(tmp_path, num_files=2, rows_per_file=50):
     for i in range(num_files):
         df = create_test_df(rows_per_file)
         df.to_parquet(tmp_path / f"file_{i}.parquet")
+
+
