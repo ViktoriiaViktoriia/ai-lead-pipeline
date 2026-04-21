@@ -17,7 +17,7 @@ CLEANED_DATA_PATH = DATA_DIR / "processed" / "cleaned"
 
 API_ENRICHED_DATA_PATH = DATA_DIR / "enriched" / "api_enriched_data"
 
-SEEN_DOMAINS_PATH = DATA_DIR / "enriched" / "api_enriched_data" / "seen_domains"
+SEEN_DOMAINS_PATH = DATA_DIR / "enriched" / "api_enriched_data" / "seen_domains" / "seen_domains_file.csv"
 
 AI_ENRICHED_DATA_PATH = DATA_DIR / "enriched" / "ai_enriched_data"
 
