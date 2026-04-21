@@ -167,36 +167,45 @@ def enrich_company_parquet(
 
         raw_snapshot_path = DATA_DIR / "full_companies_eu_raw/raw_leads_eu_snapshot.csv"
 
-        # Save full df (EU region) snapshot
-        if not raw_snapshot_path.exists():
-            logger.info("Dataset (full_companies_eu_raw) is not found. Creating new one.")
-            # full_df.to_csv(DATA_DIR / "full_companies_eu_raw/raw_leads_eu_snapshot.csv")
-            full_df.to_csv(raw_snapshot_path)
+        if mode not in ("dry", "mock"):
+            # Save full df (EU region) snapshot
+            if not raw_snapshot_path.exists():
+                logger.info("Dataset (full_companies_eu_raw) is not found. Creating new one.")
+
+                full_df.to_csv(raw_snapshot_path)
+            else:
+                logger.info("Dataset raw_leads_eu_snapshot.csv already exists.")
         else:
-            logger.info("Dataset raw_leads_eu_snapshot.csv already exists.")
+            logger.info(f"{mode.upper()} mode: skipping raw data save.")
 
         # Global scoring of potential leads (select top leads for API enrichment)
         df_top = select_top_leads(full_df, limit=TOP_LEADS_LIMIT)
 
         top_eu_snapshot_path = API_ENRICHED_DATA_PATH / "companies_eu_top/top100_leads_eu_snapshot.csv"
 
-        # Save df (top 100 companies EU)
-        if not top_eu_snapshot_path.exists():
-            logger.info("Dataset (companies_eu_top) is not found. Creating new one.")
-            df_top.to_csv(top_eu_snapshot_path)
+        if mode not in ("dry", "mock"):
+            # Save df (top 100 companies EU)
+            if not top_eu_snapshot_path.exists():
+                logger.info("Dataset (companies_eu_top) is not found. Creating new one.")
+                df_top.to_csv(top_eu_snapshot_path)
+            else:
+                logger.info("Dataset (companies_eu_top) already exists.")
         else:
-            logger.info("Dataset (companies_eu_top) already exists.")
+            logger.info(f"{mode.upper()} mode: skipping mock data save.")
 
         df_rest = full_df.drop(df_top.index)
 
         rest_eu_snapshot_path = API_ENRICHED_DATA_PATH / "companies_eu_rest_raw/rest_leads_eu_raw_snapshot.csv"
 
-        # Save df (rest of companies EU region)
-        if not rest_eu_snapshot_path.exists():
-            logger.info("Dataset (companies_eu_rest_raw) is not found. Creating new one.")
-            df_rest.to_csv(rest_eu_snapshot_path)
+        if mode not in ("dry", "mock"):
+            # Save df (rest of companies EU region)
+            if not rest_eu_snapshot_path.exists():
+                logger.info("Dataset (companies_eu_rest_raw) is not found. Creating new one.")
+                df_rest.to_csv(rest_eu_snapshot_path)
+            else:
+                logger.info("Dataset (companies_eu_rest_raw) already exists.")
         else:
-            logger.info("Dataset (companies_eu_rest_raw) already exists.")
+            logger.info(f"{mode.upper()} mode: skipping mock data save.")
 
         # Remove already processed domains
         df_top = df_top[~df_top["domain"].isin(seen_domains)]
