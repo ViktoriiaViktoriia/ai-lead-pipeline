@@ -1,10 +1,12 @@
 from pathlib import Path
 import pandas as pd
 from typing import Optional
+from datetime import datetime
 
 from config.logger_config import logger
+from config.config import API_ENRICHED_DATA_PATH, DATA_DIR
 from config.variables import (TEST_API_CALLS_LIMIT, FULL_API_CALLS_LIMIT,
-                              TOP_LEADS_LIMIT, CHECKPOINT_INTERVAL)
+                              TOP_LEADS_LIMIT, EU)
 
 from src.enrichment.selection.lead_prioritizer import select_top_leads
 from src.enrichment.api_enrichment.abstract_client import AbstractClient
@@ -14,19 +16,20 @@ from src.enrichment.process_api import process_api_batch
 
 
 def enrich_company_chunk(
-    chunk: pd.DataFrame,
-    seen_domains: set,
+    df_abstract: pd.DataFrame,
+    df_tech: pd.DataFrame,
+    seen_domains: set[str],
     mode: str,
     abstract_client: AbstractClient,
-    tech_client: TechnologyCheckerClient
-) -> tuple[pd.DataFrame, set]:
+    tech_client: TechnologyCheckerClient,
+    call_limit: int,
+):
     """
-    Enrich companies in a single chunk using Abstract API for top 100 leads and
-     Technologychecker API for next  100 leads.
+    Execute Abstract API calls and Technologychecker API calls.
 
     Args:
-        chunk (pd.DataFrame): Input DataFrame containing company records to enrich.
-                              Must include a "domain" column.
+        df_abstract (pd.DataFrame): Input DataFrame containing company records to enrich using Abstract API.
+        df_tech (pd.DataFrame): Input DataFrame containing company records to enrich using Technologychecker API.
         seen_domains (set): Set of domains already processed in previous batches or earlier in the pipeline.
                             This set is updated in-place to prevent duplicate API calls.
         mode (str): Run mode identifier.
@@ -34,6 +37,7 @@ def enrich_company_chunk(
                                           Must provide `abstract_required_fields` for response validation.
         tech_client (TechnologyCheckerClient): Client instance for interacting with the TechnologyChecker API.
                                                Must provide `tech_required_fields` for response validation.
+        call_limit (int): API calls limit.
 
     Returns:
         tuple:
@@ -41,50 +45,41 @@ def enrich_company_chunk(
                 If no data is enriched, returns an empty DataFrame with expected columns.
 
     """
+    logger.info("Starting API enrichment step")
 
-    df_top = select_top_leads(chunk, limit=TOP_LEADS_LIMIT)
-    df_rest = chunk.drop(df_top.index)
-    # df_rest = chunk.loc[~chunk.index.isin(df_top.index)]
+    abstract_calls = 0
+    tech_calls = 0
 
-    logger.info(f"Top leads (Abstract): {len(df_top)}")
-    logger.info(f"Next leads (TechnologyChecker): {len(df_rest)}")
-
-    call_limit = TEST_API_CALLS_LIMIT if mode == "limited" else FULL_API_CALLS_LIMIT
-
-    # ---------------- Abstract ----------------
+    # ---------------- Abstract -------------------------
     abstract_rows, seen_domains, abstract_calls = process_api_batch(
-        df=df_top,
+        df=df_abstract,
         client=abstract_client,
         source_name="abstract",
         required_fields=abstract_client.abstract_required_fields,
         call_limit=call_limit,
         seen_domains=seen_domains,
-        mode=mode
+        mode=mode,
+        calls_made=abstract_calls,
     )
 
     # ---------------- TechnologyChecker ----------------
     tech_rows, seen_domains, tech_calls = process_api_batch(
-        df=df_rest,
+        df=df_tech,
         client=tech_client,
         source_name="technologychecker",
         required_fields=tech_client.tech_required_fields,
         call_limit=call_limit,
         seen_domains=seen_domains,
-        mode=mode
+        mode=mode,
+        calls_made=tech_calls,
     )
 
-    logger.info(f"Abstract calls made: {abstract_calls}")
-    logger.info(f"TechChecker calls made: {tech_calls}")
+    logger.info(f"Abstract calls made: {abstract_calls}/{call_limit}")
+    logger.info(f"TechChecker calls made: {tech_calls}/{call_limit}")
 
-    all_rows = abstract_rows + tech_rows
+    enriched_rows = abstract_rows + tech_rows
 
-    df_enriched = (
-        pd.DataFrame(all_rows)
-        if all_rows
-        else pd.DataFrame(columns=chunk.columns.tolist() + ["source"])
-    )
-
-    return df_enriched, seen_domains
+    return enriched_rows, seen_domains
 
 
 def enrich_company_parquet(
@@ -99,7 +94,7 @@ def enrich_company_parquet(
     Process parquet files for company enrichment and persist results.
 
     This function reads parquet files from the input directory, enriches
-    company data in chunks, and saves the aggregated results. It maintains
+    company data, and saves the aggregated results. It maintains
     a cache of processed domains to avoid duplicate API calls and supports
     checkpointing for long-running jobs.
 
@@ -115,74 +110,171 @@ def enrich_company_parquet(
     Returns:
         None
     """
+    # Check path exists
     if not input_path.exists():
         raise FileNotFoundError(f"Input path not found: {input_path}")
 
+    # Load seen domains
     seen_domains = set()
+    if not seen_domains_file.exists():
+        logger.info("Seen domains file not found. Creating new one.")
+        seen_domains_file.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame({"domain": []}).to_csv(seen_domains_file, index=False)
+    else:
+        try:
+            df_seen = pd.read_csv(seen_domains_file)
 
-    # Load cache
-    if seen_domains_file.exists():
-        df_seen = pd.read_csv(seen_domains_file)
-        if "domain" in df_seen.columns:
-            seen_domains.update(df_seen["domain"].dropna().tolist())
-            logger.info(f"Loaded {len(seen_domains)} seen domains from cache.")
-        else:
-            logger.warning("Seen domains file missing 'domain' column.")
+            if "domain" not in df_seen.columns:
+                logger.warning("Seen domains file missing 'domain' column.")
+            else:
+                seen_domains = set(df_seen["domain"].dropna().tolist())
+                logger.info(f"Loaded {len(seen_domains)} seen domains from cache.")
+        except (OSError, IOError) as e:
+            logger.warning(f"Failed to load seen domains: {e}")
+        except pd.errors.EmptyDataError:
+            logger.warning("Seen domains file is empty. Reinitializing.")
+            seen_domains = set()
 
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    # abstract_client = AbstractClient(api_key=get_primary_api_key_abstract(), base_url=BASE_URL_ABSTRACT)
-    # tech_client = TechnologyCheckerClient(api_key=get_api_token_technology(), base_url=BASE_URL_TECHNOLOGYCHEKER)
-
-    if abstract_client is None:
-        abstract_client = create_abstract_client()
-
-    if tech_client is None:
-        tech_client = create_tech_client()
-
+    # Load data
     parquet_files = sorted(input_path.glob("*.parquet"))
     logger.info(f"Found {len(parquet_files)} parquet files to process.")
 
-    all_enriched = []
-    total_enriched = 0
+    if not parquet_files:
+        logger.warning("No parquet files found to process.")
+        return
 
-    for chunk_number, file in enumerate(parquet_files):
-        logger.info(f"[{chunk_number+1}/{len(parquet_files)}] Processing file: {file}")
+    dfs = []
 
-        try:
-            df = pd.read_parquet(file, engine="pyarrow")
+    try:
+        for file in parquet_files:
+            logger.info(f"Loading file: {file}")
 
-            df_enriched, seen_domains = enrich_company_chunk(
-                df,
-                seen_domains,
-                mode,
-                abstract_client,
-                tech_client
+            df = pd.read_parquet(file)
+
+            df["country"] = df["country"].astype(str).str.strip().str.upper()
+            logger.info(f"Unique country values: {df['country'].unique()[:10]}")
+            logger.info(f"Head (5) country values: {df['country'].value_counts().head(5)}")
+
+            # Filter by country (region)
+            df = df[df["country"].isin(EU)]
+            logger.info(f"Unique country values: {df['country'].unique()[:5]}")
+
+            dfs.append(df)
+
+        full_df = pd.concat(dfs, ignore_index=True)
+
+        logger.info(f"Total rows after EU filter: {len(full_df)}")
+
+        raw_snapshot_path = DATA_DIR / "full_companies_eu_raw/raw_leads_eu_snapshot.csv"
+
+        # Save full df (EU region) snapshot
+        if not raw_snapshot_path.exists():
+            logger.info("Dataset (full_companies_eu_raw) is not found. Creating new one.")
+            # full_df.to_csv(DATA_DIR / "full_companies_eu_raw/raw_leads_eu_snapshot.csv")
+            full_df.to_csv(raw_snapshot_path)
+        else:
+            logger.info("Dataset raw_leads_eu_snapshot.csv already exists.")
+
+        # Global scoring of potential leads (select top leads for API enrichment)
+        df_top = select_top_leads(full_df, limit=TOP_LEADS_LIMIT)
+
+        top_eu_snapshot_path = API_ENRICHED_DATA_PATH / "companies_eu_top/top100_leads_eu_snapshot.csv"
+
+        # Save df (top 100 companies EU)
+        if not top_eu_snapshot_path.exists():
+            logger.info("Dataset (companies_eu_top) is not found. Creating new one.")
+            df_top.to_csv(top_eu_snapshot_path)
+        else:
+            logger.info("Dataset (companies_eu_top) already exists.")
+
+        df_rest = full_df.drop(df_top.index)
+
+        rest_eu_snapshot_path = API_ENRICHED_DATA_PATH / "companies_eu_rest_raw/rest_leads_eu_raw_snapshot.csv"
+
+        # Save df (rest of companies EU region)
+        if not rest_eu_snapshot_path.exists():
+            logger.info("Dataset (companies_eu_rest_raw) is not found. Creating new one.")
+            df_rest.to_csv(rest_eu_snapshot_path)
+        else:
+            logger.info("Dataset (companies_eu_rest_raw) already exists.")
+
+        # Remove already processed domains
+        df_top = df_top[~df_top["domain"].isin(seen_domains)]
+        logger.info(f"Totally final candidates after filtering: {len(df_top)}")
+
+        if mode in ("dry", "mock"):
+            mock_df = full_df.head(10)
+            logger.info(f"MODE {mode}: limiting to 5 rows: {len(mock_df)}.")
+
+        # Split df_top 50/50
+        df_abstract = df_top.iloc[:50]
+        df_tech = df_top.iloc[50:100]
+
+        # API calls limits per client
+        call_limit = TEST_API_CALLS_LIMIT if mode == "limited" else FULL_API_CALLS_LIMIT
+
+        if abstract_client is None:
+            abstract_client = create_abstract_client()
+
+        if tech_client is None:
+            tech_client = create_tech_client()
+
+        # Execution
+        enriched_rows, seen_domains = enrich_company_chunk(
+            df_abstract=df_abstract,
+            df_tech=df_tech,
+            seen_domains=seen_domains,
+            mode=mode,
+            abstract_client=abstract_client,
+            tech_client=tech_client,
+            call_limit=call_limit,
+        )
+
+        # Save enriched data
+        if mode not in ("dry", "mock") and enriched_rows:
+            output_path.mkdir(parents=True, exist_ok=True)
+
+            output_file = output_path / f"enriched_{datetime.now().strftime('%Y_%m_%d_%H%M')}.csv"
+
+            pd.DataFrame(enriched_rows).to_csv(
+                output_file,
+                index=False
             )
+            logger.info(f"Saved enriched data: {output_file}")
+        else:
+            logger.info(f"{mode.upper()} mode: skipping enriched data save.")
 
-            if not df_enriched.empty:
-                all_enriched.append(df_enriched)
-                total_enriched += len(df_enriched)
+        # Save seen domains
+        if mode not in ("dry", "mock"):
+            try:
+                pd.DataFrame({"domain": list(seen_domains)}).to_csv(
+                    seen_domains_file,
+                    index=False
+                )
+                logger.info(f"Saved seen domains: {len(seen_domains)}")
+            except Exception as e:
+                logger.error(f"Failed saving seen domains: {e}", exc_info=True)
+        else:
+            logger.info(f"{mode.upper()} mode: skipping seen_domains save")
 
-                logger.info(f"Chunk {chunk_number}: enriched {len(df_enriched)} companies")
+        logger.info("Pipeline completed successfully")
 
-            if (chunk_number + 1) % CHECKPOINT_INTERVAL == 0:
-                pd.DataFrame({"domain": list(seen_domains)}).to_csv(seen_domains_file, index=False)
-                logger.info("Checkpoint: saved seen domains")
+    except KeyboardInterrupt:
+        logger.warning("Interrupted by user (Cntrl + C)")
 
-        except Exception as e:
-            logger.error(f"Failed processing {file}: {e}")
-            continue
+        if mode not in ("dry", "mock"):
+            try:
+                pd.DataFrame({"domain": list(seen_domains)}).to_csv(
+                    seen_domains_file,
+                    index=False
+                )
+                logger.info("Saved seen domains after interruption")
+            except (OSError, IOError) as e:
+                logger.error(f"Failed saving after interrupt: {e}", exc_info=True)
+        raise
 
-    if all_enriched:
-        final_df = pd.concat(all_enriched, ignore_index=True)
-        final_output = output_path / "companies_enriched_final.parquet"
-        final_df.to_parquet(final_output, index=False)
-
-        logger.info(f"Saved final enriched dataset: {final_output}")
-        logger.info(f"Total enriched companies: {total_enriched}")
-
-    pd.DataFrame({"domain": list(seen_domains)}).to_csv(seen_domains_file, index=False)
-    logger.info(f"Final seen domains saved: {seen_domains_file}")
+    except Exception as e:
+        logger.error(f"Pipeline failed: {e}", exc_info=True)
+        raise
 
     logger.info("Enrichment pipeline completed successfully.")
