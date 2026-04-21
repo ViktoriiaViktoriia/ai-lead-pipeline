@@ -212,4 +212,8 @@ data/companies_raw_2023_q4.csv
 # chunked dataset (2.1 GB)
 # cleaned dataset
 data/processed/
+data/enriched/
+data/full_companies_eu_raw/
 
+# log files
+logs/
