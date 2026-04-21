@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Optional
 
-from config.variables import (NORDICS, EU, SIZE_SCORE_MAP, PRIORITY_WEIGHTS)
+from config.variables import (NORDICS, EU, SIZE_SCORE_MAP, PRIORITY_WEIGHTS, INDUSTRY_SCORE)
 from config.logger_config import logger
 
 
@@ -14,15 +14,43 @@ def assign_geo_priority(country: Optional[str]) -> int:
             return 1
 
         if country in NORDICS:
-            return 3
+            if country in {"FI", "Finland"}:
+                return 20
+            else:
+                return 15
         elif country in EU:
-            return 2
+            return 10
 
         return 1
 
     except Exception as e:
         logger.error(f"Error assigning geo priority for country={country}: {e}")
         return 1
+
+
+def normalize_score_industry(industry: str) -> int:
+    """
+    Assign industry priority score.
+    """
+    if not industry:
+        return INDUSTRY_SCORE["unknown"]
+
+    i = str(industry).strip().lower()
+
+    # normalization + mapping
+    if "fin" in i:
+        normalized = "fintech"
+    elif "saas" in i or "software" in i:
+        normalized = "saas"
+    elif any(keyword in i for keyword in ["it", "technology", "internet", "development"]):
+        normalized = "technology"
+    elif "manufact" in i:
+        normalized = "manufacturing"
+    else:
+        normalized = "unknown"
+
+    # return scoring
+    return INDUSTRY_SCORE.get(normalized, INDUSTRY_SCORE["unknown"])
 
 
 def compute_priority_score(df: pd.DataFrame) -> pd.DataFrame:
@@ -36,6 +64,9 @@ def compute_priority_score(df: pd.DataFrame) -> pd.DataFrame:
 
         # Geo priority
         df["geo_priority"] = df["country"].apply(assign_geo_priority)
+
+        # Industry priority
+        df["industry_priority"] = df["industry"].apply(normalize_score_industry)
 
         # Size score
         df["size_score"] = (
@@ -54,12 +85,14 @@ def compute_priority_score(df: pd.DataFrame) -> pd.DataFrame:
         )
 
         df["geo_priority"] = df["geo_priority"].astype("int64")
+        df["industry_priority"] = df["industry_priority"].astype("int64")
         df["size_score"] = df["size_score"].astype("int64")
         df["data_missing_score"] = df["data_missing_score"].astype("int64")
 
         # Final score
         df["priority_score"] = (
             df["geo_priority"] * PRIORITY_WEIGHTS["geo"] +
+            df["industry_priority"] * PRIORITY_WEIGHTS["industry"] +
             df["size_score"] * PRIORITY_WEIGHTS["size"] +
             df["data_missing_score"] * PRIORITY_WEIGHTS["missing"]
         )
