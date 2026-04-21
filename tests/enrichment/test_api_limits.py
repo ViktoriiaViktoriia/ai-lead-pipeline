@@ -2,7 +2,7 @@ import pandas as pd
 
 from src.enrichment.enrich_company import enrich_company_parquet
 
-from tests.test_utils import MockAbstractClient, MockTechClient, create_parquet_files
+from tests.test_utils import MockAbstractClient, MockTechClient, create_parquet_test_files
 
 
 # Test api limit (mock clients)
@@ -14,7 +14,7 @@ def test_global_api_limit(tmp_path):
     input_path.mkdir()
 
     # Create multiple parquet files
-    create_parquet_files(input_path, num_files=2, rows_per_file=50)
+    create_parquet_test_files(input_path, num_files=2, rows_per_file=50)
 
     # Mock clients
     abstract_client_test = MockAbstractClient()
