@@ -54,7 +54,7 @@ EU = [
 ]
 
 SIZE_SCORE_MAP = {
-    "enterprise": 3,
+    "enterprise": 4,
     "large": 3,
     "medium": 2,
     "small": 1
@@ -62,18 +62,27 @@ SIZE_SCORE_MAP = {
 
 PRIORITY_WEIGHTS = {
     "geo": 3,
+    "industry": 5,
     "size": 2,
     "missing": 4
+}
+
+INDUSTRY_SCORE = {
+    "fintech": 12,
+    "saas": 12,
+    "technology": 10,
+    "manufacturing": 8,
+    "unknown": 5
 }
 
 REQUIRED_FIELDS = ["company_name", "industry", "country"]
 
 RUN_MODE = "dry"  # "dry" | "mock" | "limited" | "full"
 
-TEST_API_CALLS_LIMIT = 3
-FULL_API_CALLS_LIMIT = 95
+TEST_API_CALLS_LIMIT = 1
+FULL_API_CALLS_LIMIT = 50
 
-MAX_RETRIES = 2
+MAX_RETRIES = 1
 BACKOFF_SEC = 2
 
 TOP_LEADS_LIMIT = 100
