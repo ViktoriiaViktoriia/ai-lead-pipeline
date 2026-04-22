@@ -171,7 +171,7 @@ def enrich_company_parquet(
             # Save full df (EU region) snapshot
             if not raw_snapshot_path.exists():
                 logger.info("Dataset (full_companies_eu_raw) is not found. Creating new one.")
-
+                raw_snapshot_path.parent.mkdir(parents=True, exist_ok=True)
                 full_df.to_csv(raw_snapshot_path)
             else:
                 logger.info("Dataset raw_leads_eu_snapshot.csv already exists.")
@@ -187,6 +187,7 @@ def enrich_company_parquet(
             # Save df (top 100 companies EU)
             if not top_eu_snapshot_path.exists():
                 logger.info("Dataset (companies_eu_top) is not found. Creating new one.")
+                top_eu_snapshot_path.parent.mkdir(parents=True, exist_ok=True)
                 df_top.to_csv(top_eu_snapshot_path)
             else:
                 logger.info("Dataset (companies_eu_top) already exists.")
@@ -201,6 +202,7 @@ def enrich_company_parquet(
             # Save df (rest of companies EU region)
             if not rest_eu_snapshot_path.exists():
                 logger.info("Dataset (companies_eu_rest_raw) is not found. Creating new one.")
+                rest_eu_snapshot_path.parent.mkdir(parents=True, exist_ok=True)
                 df_rest.to_csv(rest_eu_snapshot_path)
             else:
                 logger.info("Dataset (companies_eu_rest_raw) already exists.")
