@@ -73,12 +73,12 @@ class RateLimitReached(Exception):
 
 
 # Create fake dataset
-def create_test_df(n=200):
+def create_test_df(n=100):
     return pd.DataFrame({
-        "domain": [f"test{i}.com" for i in range(n)],
+        "domain": [f"test_{i}.com" for i in range(n)],
         "country": ["FI"] * n,
-        "industry": ["tech"] * n,
-        "company_name": [f"company{i}" for i in range(n)],
+        "industry": ["saas"] * n,
+        "company_name": [f"test_company_{i}" for i in range(n)],
         "size_category": "1K - 2K",
         "is_valid_domain": True,
     })
