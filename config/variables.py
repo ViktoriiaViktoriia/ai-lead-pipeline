@@ -27,16 +27,24 @@ SIZE_MAPPING = {
     "10000+": "enterprise",
 }
 
+# industry normalization
 INDUSTRY_MAPPING = {
-    "information technology": "tech",
-    "it services": "tech",
-    "software": "tech",
-    "software development": "tech",
-    "internet": "tech",
+    "information technology": "technology",
+    "it services": "technology",
+    "software": "technology",
+    "software development": "technology",
+    "internet": "technology",
+    "tech": "technology",
+
+    "saas": "saas",
+
+    "fintech": "fintech",
 
     "financial services": "finance",
     "banking": "finance",
     "insurance": "finance",
+
+    "manufacturing": "manufacturing",
 
     "marketing and advertising": "marketing",
     "advertising services": "marketing",
@@ -44,6 +52,8 @@ INDUSTRY_MAPPING = {
     "education": "education",
     "education administration programs": "education",
 }
+
+ALLOWED_INDUSTRIES = set(INDUSTRY_MAPPING.values()) | {"unknown"}
 
 NORDICS = ["FI", "SE", "NO", "DK", "IS"]
 
@@ -64,6 +74,7 @@ PRIORITY_WEIGHTS = {
     "geo": 3,
     "industry": 5,
     "size": 2,
+    "employee_range": 2,
     "missing": 4
 }
 
@@ -72,6 +83,9 @@ INDUSTRY_SCORE = {
     "saas": 12,
     "technology": 10,
     "manufacturing": 8,
+    "finance": 10,
+    "education": 8,
+    "marketing": 8,
     "unknown": 5
 }
 
