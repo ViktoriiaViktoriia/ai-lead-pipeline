@@ -4,9 +4,14 @@ from pathlib import Path
 from config.logger_config import logger
 
 from src.ingestion.load_company_leads import load_csv_data
-from src.processing.cleaning.industry_cleaner import clean_industry
+from src.enrichment.ai_enrichment.ai_enrichment import ai_enrich
+from src.enrichment.rule_based_enrichment import rule_based_enrich
+from src.enrichment.routing import Route, assign_routes
 from src.enrichment.selection.lead_prioritizer import select_top_leads
 from src.processing.data_quality.profiling import profile_dataset
+from src.processing.cleaning.industry_cleaner import clean_industry
+from src.processing.cleaning.location_cleaner import clean_location
+from src.processing.cleaning.company_cleaner import clean_company_name
 from src.utils.validators import validate_file_path
 
 
@@ -47,7 +52,9 @@ def basic_filtering(df: pd.DataFrame) -> pd.DataFrame:
     """
     logger.info("Applying basic filtering")
 
+    df = clean_company_name(df)
     df = clean_industry(df)
+    df = clean_location(df)
 
     required_columns = {"domain", "company_name", "industry", "country"}
 
@@ -85,7 +92,8 @@ def select_candidates(
         min_score: int = 35
 ) -> pd.DataFrame:
     """
-    Computing preliminary priority scores. Selecting high-quality candidates for AI enrichment.
+    Computing preliminary priority scores. Selecting high-quality candidates for rule-based enrichment
+    and AI enrichment.
 
     The goal is to ensure that only clean, relevant, and high-priority records are sent to the AI model,
     reducing cost and improving overall data quality.
@@ -109,6 +117,63 @@ def select_candidates(
 
     profile_dataset(df_top, logger)
 
-    logger.info(f"Leads selection for AI enrichment completed.")
+    logger.info(f"Leads selection for enrichment completed.")
 
     return df_top.copy()
+
+
+def process_rows(df, ai_client):
+    """
+    Process dataset rows by applying routing logic and enrichment.
+
+    Workflow:
+        1. Assign routes to each row (AI, rule-based, or skip)
+        2. Skip invalid rows
+        3. Apply rule-based enrichment to all valid rows
+        4. Apply AI enrichment only to selected rows (based on routing)
+        5. Merge enrichment results into a unified output
+
+    Args:
+        df (pd.DataFrame): Input dataset containing company information
+        ai_client: Initialized AI client used for enrichment
+
+    Returns:
+        List[Dict[str, Any]]: List of enriched records
+    """
+    df = assign_routes(df)
+
+    results = []
+    skip_count = 0
+
+    records = df.to_dict(orient="records")
+
+    for row in records:
+        route = row.get("route")
+
+        # Skip invalid rows
+        if route == Route.SKIP.value:
+            skip_count += 1
+            continue
+
+        # Rule-based enrichment
+        base_result = rule_based_enrich(row)
+
+        # AI enrichment
+        if route == Route.AI.value:
+            ai_result = ai_enrich(row, ai_client)
+
+            if ai_result:
+                base_result.update(ai_result)
+
+        results.append(base_result)
+
+    logger.info(
+        "Processing completed",
+        extra={
+            "total_rows": len(df),
+            "skipped": skip_count,
+            "processed": len(results)
+        }
+    )
+
+    return results
