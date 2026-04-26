@@ -6,13 +6,31 @@ LEGAL_SUFFIXES = [
 
 # Basic country normalization mapping
 COUNTRY_MAPPING = {
-    "us": "united states",
-    "usa": "united states",
-    "gb": "united kingdom",
-    "uk": "united kingdom",
-    "de": "germany",
-    "fr": "france",
-    "fi": "finland",
+    "us": "US",
+    "united states": "US",
+    "usa": "US",
+    "gb": "UK",
+    "uk": "UK",
+    "united kingdom": "UK",
+    "de": "DE",
+    "germany": "DE",
+    "fr": "FR",
+    "france": "FR",
+    "fi": "FI",
+    "finland": "FI",
+    "Finland": "FI",
+    "se": "SE",
+    "sweden": "SE",
+    "Sweden": "SE",
+    "no": "NO",
+    "Norway": "NO",
+    "norway": "NO",
+    "dk": "DK",
+    "Denmark": "DK",
+    "denmark": "DK",
+    "is": "IS",
+    "island": "IS",
+    "Island": "IS"
 }
 
 # Standard mappings
