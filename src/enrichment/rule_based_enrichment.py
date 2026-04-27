@@ -27,11 +27,19 @@ def rule_based_enrich(row: Dict[str, Any]) -> Dict[str, Any]:
         # Description generation
         description = _build_description(company_name, domain, industry, country)
 
+        # Sales relevance computation
+        sales_relevance = _compute_sales_relevance(row)
+
+        # Buying signal estimation
+        buying_signal = _compute_buying_signal(row)
+
         return {
             "industry_ai": industry,
             "segment": segment,
             "industry_confidence": confidence,
             "short_description": description,
+            "sales_relevance": sales_relevance,
+            "buying_signal": buying_signal,
             "source": "rule_based",
         }
 
@@ -90,3 +98,40 @@ def _build_description(
     except Exception as e:
         logger.warning(f"Description generation failed: {e}")
         return "Company description unavailable"
+
+
+def _compute_sales_relevance(row):
+    score = 0.0
+
+    country = row.get("country")
+    industry = row.get("industry")
+    size = row.get("employee_range")
+    domain = row.get("domain")
+    company_name = row.get("company_name")
+
+    # Geo signal
+    if country in {"SE", "FI", "NO", "DK"}:
+        score += 0.3
+
+    # Industry signal
+    if industry in {"software", "saas", "fintech"}:
+        score += 0.3
+
+    # Company size signal
+    if size in {"50-200", "200-1000"}:
+        score += 0.2
+
+    # Data completeness signal
+    if domain and company_name:
+        score += 0.2
+
+    return round(score, 2)
+
+
+def _compute_buying_signal(row, threshold: float = 0.7) -> int:
+    score = _compute_sales_relevance(row)
+
+    if score is None or (score <= threshold):
+        return 0
+
+    return int(score >= threshold)
