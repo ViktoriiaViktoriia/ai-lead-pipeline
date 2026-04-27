@@ -125,16 +125,28 @@ def validate_ai_output(data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         description = description.strip()[:500]
 
-    # Business segment classification ("b2b", "b2c", "enterprise", etc.)
+    # Business segment classification
     segment = data.get("segment", "unknown")
     if not isinstance(segment, str):
         segment = "unknown"
     else:
         segment = segment.lower().strip()
 
+    # Sales relevance validation
+    sales_relevance = data.get("sales_relevance", 0.0)
+    if not isinstance(sales_relevance, (int, float)) or not (0 <= sales_relevance <= 1):
+        data["sales_relevance"] = 0.0
+
+    # Buying signal
+    buying_signal = data.get("buying_signal", 0)
+    if buying_signal not in (0, 1):
+        data["buying_signal"] = 0
+
     return {
         "industry_ai": normalized_industry,
         "industry_confidence": confidence,
         "description_ai": description,
-        "segment": segment
+        "segment": segment,
+        "sales_relevance": sales_relevance,
+        "buying_signal": buying_signal
     }
