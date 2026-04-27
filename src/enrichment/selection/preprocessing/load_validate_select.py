@@ -8,6 +8,7 @@ from src.enrichment.ai_enrichment.ai_enrichment import ai_enrich
 from src.enrichment.rule_based_enrichment import rule_based_enrich
 from src.enrichment.routing import Route, assign_routes
 from src.enrichment.selection.lead_prioritizer import select_top_leads
+from src.enrichment.selection.preprocessing.normalize_size import normalize_employee_range, assign_size_category
 from src.processing.data_quality.profiling import profile_dataset
 from src.processing.cleaning.industry_cleaner import clean_industry
 from src.processing.cleaning.location_cleaner import clean_location
@@ -78,6 +79,12 @@ def basic_filtering(df: pd.DataFrame) -> pd.DataFrame:
 
     # fill industry safely
     df["industry"] = df["industry"].fillna("unknown")
+
+    # normalize employee range
+    df["employee_range_normalized"] = df.apply(normalize_employee_range, axis=1)
+
+    # update size category
+    df["size_category"] = df.apply(assign_size_category, axis=1)
 
     logger.info(f"Remaining rows after filtering: {len(df)}")
 
