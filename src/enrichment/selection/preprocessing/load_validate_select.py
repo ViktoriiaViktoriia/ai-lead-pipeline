@@ -6,7 +6,7 @@ from config.logger_config import logger
 from src.ingestion.load_company_leads import load_csv_data
 from src.enrichment.ai_enrichment.ai_enrichment import ai_enrich
 from src.enrichment.rule_based_enrichment import rule_based_enrich
-from src.enrichment.routing import Route, assign_routes
+from src.enrichment.routing import Route
 from src.enrichment.selection.lead_prioritizer import select_top_leads
 from src.enrichment.selection.preprocessing.normalize_size import normalize_employee_range, assign_size_category
 from src.processing.data_quality.profiling import profile_dataset
@@ -131,14 +131,13 @@ def select_candidates(
 
 def process_rows(df, ai_client):
     """
-    Process dataset rows by applying routing logic and enrichment.
+    Process routed dataset rows and apply enrichment.
 
     Workflow:
-        1. Assign routes to each row (AI, rule-based, or skip)
-        2. Skip invalid rows
-        3. Apply rule-based enrichment to all valid rows
-        4. Apply AI enrichment only to selected rows (based on routing)
-        5. Merge enrichment results into a unified output
+        1. Skip invalid rows
+        2. Apply rule-based enrichment to all valid rows
+        3. Apply AI enrichment only to selected rows (based on routing)
+        4. Merge enrichment results into a unified output
 
     Args:
         df (pd.DataFrame): Input dataset containing company information
@@ -147,7 +146,6 @@ def process_rows(df, ai_client):
     Returns:
         List[Dict[str, Any]]: List of enriched records
     """
-    df = assign_routes(df)
 
     results = []
     skip_count = 0
