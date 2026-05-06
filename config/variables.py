@@ -119,3 +119,26 @@ BACKOFF_SEC = 2
 
 TOP_LEADS_LIMIT = 100
 CHECKPOINT_INTERVAL = 5
+
+MODE_CONFIG = {
+    "dry": {
+        "top_n": 0,
+        "batch_size": 100,
+    },
+    "mock": {
+        "top_n": 5,
+        "batch_size": 100,
+    },
+    "rule": {
+        "top_n": 0,
+        "batch_size": 100,
+    },
+    "limited": {
+        "top_n": 5,
+        "batch_size": 10,
+    },
+    "full": {
+        "top_n": 200,
+        "batch_size": 100,
+    }
+}    # top_n rows for AI enrichment
