@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 from config.logger_config import logger
 
 from src.utils.validators import validate_ai_output
+from src.enrichment.ai_enrichment.ai_client import MockAIClient
 
 
 def build_prompt(row: dict) -> str:
@@ -69,6 +70,14 @@ def ai_enrich(row: Dict[str, Any], ai_client) -> Dict[str, Any]:
     if not row.get("domain") and not row.get("company_name"):
         logger.info("Skipping AI enrichment: missing identifiers")
         return {}
+
+    # Mock AI behavior
+    if isinstance(ai_client, MockAIClient):
+        return {
+            "ai_summary": "mocked value",
+            "ai_score": 0.0,
+            "source": "ai:mock"
+        }
 
     try:
         prompt = build_prompt(row)
