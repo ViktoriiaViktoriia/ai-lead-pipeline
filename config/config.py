@@ -21,6 +21,8 @@ SEEN_DOMAINS_PATH = DATA_DIR / "enriched" / "api_enriched_data" / "seen_domains"
 
 AI_ENRICHED_DATA_PATH = DATA_DIR / "enriched" / "ai_enriched_data"
 
+RULE_ENRICHED_DATA_PATH = DATA_DIR / "enriched" / "rule_based_enriched_data"
+
 
 # Abstract company enrichment API
 BASE_URL_ABSTRACT = os.getenv("BASE_URL_ABSTRACT")
@@ -45,3 +47,7 @@ def get_api_token_technology() -> str:
     if not value:
         raise ValueError("API_TOKEN_TECHNOLOGYCHEKER is missing in .env")
     return value
+
+
+# BASE_URL_AI
+# API_KEY_AI
