@@ -53,15 +53,15 @@ def basic_filtering(df: pd.DataFrame) -> pd.DataFrame:
     """
     logger.info("Applying basic filtering")
 
-    df = clean_company_name(df)
-    df = clean_industry(df)
-    df = clean_location(df)
-
     required_columns = {"domain", "company_name", "industry", "country"}
 
     missing = required_columns - set(df.columns)
     if missing:
         raise ValueError(f"Missing required columns: {missing}")
+
+    df = clean_company_name(df)
+    df = clean_industry(df)
+    df = clean_location(df)
 
     df = df.copy()
 
