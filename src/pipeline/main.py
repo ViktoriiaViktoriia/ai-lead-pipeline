@@ -13,7 +13,7 @@ from src.enrichment.selection.preprocessing.load_validate_select import (load_da
 from src.enrichment.enrich_company import enrich_company_parquet
 from src.enrichment.api_enrichment.clients import create_abstract_client, create_tech_client
 from src.enrichment.ai_enrichment_pipeline import run_ai_enrichment_pipeline
-from src.enrichment.ai_enrichment.ai_clients import create_mock_ai_client, create_ai_client
+from src.enrichment.ai_enrichment.create_mock_ai_clients import create_mock_ai_client, create_ai_client
 
 
 def parse_args():
