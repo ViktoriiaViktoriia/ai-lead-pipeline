@@ -4,7 +4,8 @@ from unittest.mock import patch
 
 from config.logger_config import logger
 
-from src.enrichment.selection.preprocessing.load_validate_select import load_data, basic_filtering, select_candidates
+from src.enrichment.selection.preprocessing.load_validate_select import (load_data, basic_filtering, select_candidates,
+                                                                         process_rows)
 
 
 @patch("src.enrichment.selection.preprocessing.load_validate_select.profile_dataset")
@@ -93,4 +94,26 @@ def test_select_candidates_respects_top_n(sample_leads_df):
 
     assert len(result) == 2
 
-# def test_process_rows()
+
+@patch("src.enrichment.selection.preprocessing.load_validate_select.ai_enrich")
+@patch("src.enrichment.selection.preprocessing.load_validate_select.rule_based_enrich")
+def test_process_rows(mock_rule, mock_ai):
+    df = pd.DataFrame([
+        {"route": "skip"},
+        {"route": "rule"},
+        {"route": "ai"}
+    ])
+
+    mock_rule.return_value = {"rule": True}
+    mock_ai.return_value = {"ai": True}
+
+    result = process_rows(df, ai_client="dummy")
+
+    # skip is ignored → only 2 rows processed
+    assert len(result) == 2
+
+    # rule-based always applied
+    assert all("rule" in r for r in result)
+
+    # AI applied only once
+    assert mock_ai.call_count == 1
