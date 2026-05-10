@@ -39,9 +39,58 @@ def test_basic_filtering_raises_for_missing_columns():
         basic_filtering(df)
 
 
-# test_basic_filtering_removes_invalid_domains
+def test_basic_filtering_removes_invalid_domains():
+    df = pd.DataFrame({
+        "domain": ["valid.com", "invalid_domain"],
+        "company_name": ["Company A", "Company B"],
+        "industry": ["Tech", "Tech"],
+        "country": ["FI", "FI"]
+    })
 
-# test_select_candidates_filters_low_scores
-# test_select_candidates_removes_duplicate_domains
-# test_select_candidates_respects_top_n
-# test_process_rows
+    result = basic_filtering(df)
+
+    assert len(result) == 1
+    assert result["domain"].iloc[0] == "valid.com"
+
+
+def test_select_candidates_filters_by_min_score(sample_leads_df):
+    result = select_candidates(
+        sample_leads_df,
+        min_score=90
+    )
+    print(result)
+    print(result[["domain", "priority_score"]])
+    assert len(result) == 1
+    assert result["domain"].tolist() == ["a.com"]
+
+
+def test_select_candidates_removes_duplicate_domains():
+    df = pd.DataFrame({
+        "domain": ["a.com", "a.com", "b.com"],
+        "company_name": ["A1", "A2", "B"],
+        "industry": ["Tech", "Tech", "Finance"],
+        "country": ["FI", "FI", "SE"],
+        "priority_score": [90, 80, 70],
+        "is_valid_domain": [True, True, True],
+        "size_category": ["medium", "medium", "medium"]
+    })
+
+    result = select_candidates(
+        df,
+        top_n=10,
+        min_score=0
+    )
+
+    assert result["domain"].nunique() == 2
+
+
+def test_select_candidates_respects_top_n(sample_leads_df):
+    result = select_candidates(
+        sample_leads_df,
+        top_n=2,
+        min_score=0
+    )
+
+    assert len(result) == 2
+
+# def test_process_rows()
