@@ -110,3 +110,16 @@ def mock_run_mode():
     def _set(mode):
         return patch("src.enrichment.run_mode.RUN_MODE", mode)
     return _set
+
+
+@pytest.fixture
+def sample_leads_df():
+    return pd.DataFrame({
+        "domain": ["a.com", "b.com", "c.com"],
+        "company_name": ["A", "B", "C"],
+        "industry": ["Tech", "Tech", "Finance"],
+        "country": ["FI", "FI", "SE"],
+        "priority_score": [50, 20, 10],
+        "is_valid_domain": [True, True, False],
+        "size_category": ["large", "medium", "small"]
+    })
